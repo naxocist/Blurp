@@ -1,15 +1,25 @@
 from random import choice, randint
 
+from HF import text_gen
+from jikan import random_anime
+
 def get_response(user_input: str) -> str:
-    lowered: str = user_input.lower()
 
-    if(lowered == ''):
-        return 'Well, you\'re awfully silent..'
+    title, synopsis, names = random_anime()
 
-    if('hello' in lowered):
-        return 'Hello there!'
+    names_str = ""
+    for n in names:
+        names_str += f"\"{n}\", "
 
-    if('roll dice' in lowered):
-        return f'You rolled: {randint(1, 6)}'
-    
-    return choice(['I do not understand..', 'What are you talking about?'])
+    setup = f"""Now, you are anime related bot helper. Generate 5 hints of the anime named {title} with following rules
+                1. do not use these words [{names_str}]
+                2. do not reveal the anime name
+                """
+
+    prompt = setup + synopsis
+
+    print(prompt)
+
+    res = text_gen(prompt) +  f"||{title}||"
+
+    return res
