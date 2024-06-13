@@ -21,4 +21,5 @@ def get_response(user_input: str) -> str:
 
     res = text_gen(prompt) 
 
+
     return res
