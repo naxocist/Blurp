@@ -1,13 +1,13 @@
 from jikanpy import Jikan
-jikan = Jikan()
-
 import json
+
 
 def format(data):
     return json.dumps(data, indent=4)
 
 
 def random_anime():
+    jikan = Jikan()
     data = jikan.random(type='anime')['data']
     # print(format(data))
 
@@ -15,13 +15,7 @@ def random_anime():
     title = data['title']
     synopsis = data['synopsis']
 
-    # print(id)
-    # print(title)
-    # print(synopsis)
-
     characters = jikan.anime(id, extension='characters')['data']
-    # print(format(characters))
-    # print(type(characters))
 
     names = []
 

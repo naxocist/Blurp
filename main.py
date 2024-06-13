@@ -11,11 +11,11 @@ from responses import get_response
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-intents = Intents.default()
+intents: Intents = Intents.default()
 intents.message_content = True
 
-activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
-client = Client(intents=intents, activity=activity)
+activity: discord.Activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
+client: Client = Client(intents=intents, activity=activity)
 
 tree = app_commands.CommandTree(client)
 
@@ -50,16 +50,6 @@ async def on_message(message: Message) -> None:
     await send_message(message, user_message)
 
 
-
-@tree.command(
-    name="commandname",
-    description="My first application Command",
-    guild=discord.Object(id=12417128931)
-)
-async def first_command(interaction):
-    await interaction.response.send_message("Hello!")
-
-
 @client.event
 async def on_ready() -> None:
     # await tree.sync(guild=discord.Object(id=))
@@ -68,11 +58,6 @@ async def on_ready() -> None:
 
 if __name__ == '__main__':
     client.run(token=TOKEN)
-   
-# jikan = Jikan()
-# def json_dump(data):
-#     return json.dumps(data, indent=4)
-
 
 '''
 https://discord.com/oauth2/authorize?client_id=1248292283883851919&permissions=139589962816&integration_type=0&scope=bot
