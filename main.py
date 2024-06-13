@@ -1,10 +1,9 @@
-from jikanpy import Jikan
-import json
-
 from typing import Final
 import os
 from dotenv import load_dotenv
-from discord import Intents, Client, Message
+
+from discord import Intents, Client, Message, app_commands
+import discord
 
 from responses import get_response
 
@@ -12,11 +11,13 @@ from responses import get_response
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-
-intents: Intents = Intents.default()
+intents = Intents.default()
 intents.message_content = True
 
-client: Client = Client(intents=intents)
+activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
+client = Client(intents=intents, activity=activity)
+
+tree = app_commands.CommandTree(client)
 
 
 async def send_message(message: Message, user_message: str) -> None:
@@ -34,10 +35,6 @@ async def send_message(message: Message, user_message: str) -> None:
         print(e)
 
 
-@client.event
-async def on_ready() -> None:
-    print(f'{client.user} is now running!')
-
 
 @client.event
 async def on_message(message: Message) -> None:
@@ -53,11 +50,24 @@ async def on_message(message: Message) -> None:
     await send_message(message, user_message)
 
 
-def main() -> None:
-    client.run(token=TOKEN)
+
+@tree.command(
+    name="commandname",
+    description="My first application Command",
+    guild=discord.Object(id=12417128931)
+)
+async def first_command(interaction):
+    await interaction.response.send_message("Hello!")
+
+
+@client.event
+async def on_ready() -> None:
+    # await tree.sync(guild=discord.Object(id=))
+    print(f'{client.user} is now running!')
+
 
 if __name__ == '__main__':
-    main()
+    client.run(token=TOKEN)
    
 # jikan = Jikan()
 # def json_dump(data):
