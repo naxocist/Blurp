@@ -3,6 +3,12 @@ from random import choice, randint
 from HF import text_gen
 from jikan import random_anime
 
+"""
+Api used in this project
+- Jikan API (4.0.0)
+- NekosBest
+"""
+
 def get_response(user_input: str) -> str:
 
     title, synopsis, names = random_anime()
