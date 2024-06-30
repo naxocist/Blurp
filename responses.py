@@ -23,9 +23,8 @@ def get_response(user_input: str) -> str:
                 """
 
     prompt = setup + synopsis
-    # print(prompt)
+    print(title)
 
     res = text_gen(prompt) 
-
 
     return res

@@ -1,63 +1,131 @@
-from typing import Final
-import os
-from dotenv import load_dotenv
-
-from discord import Intents, Client, Message, app_commands
 import discord
+from discord.ext import commands
+
+import settings
+
+import asyncio
 
 from responses import get_response
 
+import random
 
-load_dotenv()
-TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
 
-intents: Intents = Intents.default()
+intents = discord.Intents.default()
 intents.message_content = True
 
-activity: discord.Activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
-client: Client = Client(intents=intents, activity=activity)
+logger = settings.logging.getLogger("bot")
 
-tree = app_commands.CommandTree(client)
+activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
+bot = commands.Bot(command_prefix='.', intents=intents, activity=activity)
 
 
-async def send_message(message: Message, user_message: str) -> None:
-    if not user_message:
-        print('(The message was empty because intents were not enabled properly)')
-        return 
+@bot.command()
+async def t(ctx) -> None:
+
+    def check(m):
+        return m.author == ctx.author and isinstance(m.channel, discord.DMChannel)
+
+    message = await bot.wait_for('message', check=check, timeout=10)
+
+    embed = discord.Embed()
+
+    embed.title = 'This is title'
+    embed.description = 'This is description'
+    embed.colour = discord.Colour.blue()
+
+    file = discord.File('./assets/profile.jpeg', filename="profile.jpeg")
+    embed.set_image(url='attachment://profile.jpeg')
+    embed.set_thumbnail(url='attachment://profile.jpeg')
+    embed.set_footer(text='This is foother', icon_url=ctx.author.avatar.url)
+    embed.set_author(name=ctx.author.nick, url='https://www.google.co.th/', icon_url=ctx.author.avatar.url)
+
+    embed.add_field(name='this is name', value='this is value', inline=True)
+    embed.add_field(name='this is name', value='this is value', inline=True)
+
+    await ctx.send(file=file, embed=embed)
+
+
+@bot.command()
+async def g(ctx) -> None:
+
+    # if ctx.author.voice is None:
+    #     await ctx.send(f"You must be in a voice channel! {ctx.author.mention} ")
+    #     return
     
-    if is_private := user_message[0] == '?':
-        user_message = user_message[1:]
+    players = [ctx.author]
+    # voice_channel = ctx.author.voice.channel
 
-    try:
-        response: str = get_response(user_message)
-        await message.author.send(response) if is_private else await message.channel.send(response)
-    except Exception as e:
-        print(e)
-
-
-
-@client.event
-async def on_message(message: Message) -> None:
-    if(message.author == client.user):
-        return 
+    # await ctx.send(f"The game starts in {voice_channel.mention}")
     
-    username: str = str(message.author) 
-    user_message: str = message.content
-    channel: str = str(message.channel)
 
-    print(f'[{channel}] {username}: "{user_message}"')
+    def check(m):
+        return m.author != bot.user and m.channel == ctx.channel and m.content == "join" and m.author not in players
 
-    await send_message(message, user_message)
+    await ctx.send(embed=discord.Embed(title='If you want to join this game, type \"join\"'))
+
+    while True:
+        try:
+            response = await bot.wait_for('message', check=check, timeout=5)
+
+            players.append(response.author)
+
+            await ctx.send(f'{response.author.mention} joined!')
+
+        except asyncio.TimeoutError:
+
+            await ctx.send('Time\'s up!')
+
+            random.shuffle(players)
+
+            description = 'Here\'s the players order..\n'
+            for idx, player in enumerate(players, start=1):
+                description += f'#{idx}: {player.mention}\n'
+            
+            embed_info = discord.Embed(title='Players summary', description=description)
+            await ctx.send(embed=embed_info)
+            break
+
+    ids = { p: idx for idx, p in enumerate(players) }
+
+    print(ids)
+    
+    players_number = len(players)
+    pairs = [(i+1)%players_number for i in range(players_number)]
+
+    tasks = []
+    for idx, p in enumerate(players):
+        nxt = players[pairs[idx]]
+
+        embed_pick = discord.Embed(title=f"Pick an anime for {nxt.name} to guess!", colour=discord.Colour.random())
+        embed_pick.description = "please send me the chosen anime's MAL id here"
+        embed_pick.set_image(url=nxt.avatar.url)
+        embed_pick.set_footer(icon_url=bot.user.avatar.url, text="This person will be guessing the chosen anime...")
+
+        await p.send(embed=embed_pick)
+        task = asyncio.create_task(bot.wait_for('message', check=lambda m: m.author == p and isinstance(m.channel, discord.DMChannel), timeout=5))
+        tasks.append(task)
+    
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.ALL_COMPLETED)
+
+    assigned_animes = {}
+    for task in done:
+        if task.exception():
+            # This player didn't send anime id
+            continue
+
+        message = task.result()
+        MAL_id = message.content
+        author_id = ids[message.author]
+
+        assigned_animes[pairs[author_id]] = MAL_id
 
 
-@client.event
-async def on_ready() -> None:
-    # await tree.sync(guild=discord.Object(id=))
-    print(f'{client.user} is now running!')
+@bot.event
+async def on_ready():
+    logger.info(f"User: {bot.user} (ID: {bot.user.id})")
 
 
-if __name__ == '__main__':
-    client.run(token=TOKEN)
+bot.run(settings.TOKEN, root_logger=True)
 
 '''
 https://discord.com/oauth2/authorize?client_id=1248292283883851919&permissions=139589962816&integration_type=0&scope=bot
