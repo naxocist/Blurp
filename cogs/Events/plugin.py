@@ -13,7 +13,7 @@ class Events(Plugin):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        print(self.bot.user, " is ready!")
+        print(self.bot.user, "is ready!")
 
 
     @commands.Cog.listener()

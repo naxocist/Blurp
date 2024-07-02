@@ -14,6 +14,6 @@ class Plugin(Cog):
     
 
     async def cog_load(self):
-        log.info(f"Loaded {self.qualified_name} cog.")
+        log.info(f"Loaded {self.qualified_name} cog")
     
     

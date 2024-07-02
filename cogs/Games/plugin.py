@@ -91,7 +91,6 @@ class Games(Plugin):
         turn = 0
         while True:
 
-
             turn += 1
             turn %= len(players)
     
