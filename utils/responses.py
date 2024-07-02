@@ -1,7 +1,7 @@
 from random import choice, randint
 
-from HF import text_gen
-from jikan import random_anime
+from utils.HF import text_gen
+from utils.jikan import random_anime
 
 """
 Api used in this project

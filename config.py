@@ -1,10 +1,11 @@
+from __future__ import annotations
+from typing import Final
+
 import os
 from dotenv import load_dotenv
 from typing import Final
 
 from logging.config import dictConfig
-import logging
-
 
 load_dotenv()
 TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
@@ -41,7 +42,9 @@ LOGGING_CONFIG = {
     },
     "loggers": {
         "bot": {
-            "handlers": ["console"], "level": "INFO", "propagate": False
+            "handlers": ["console"], 
+            "level": "INFO", 
+            "propagate": False
         },
         "discord": {
             "handlers": ["console2", "file"],
