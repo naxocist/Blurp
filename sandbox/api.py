@@ -11,7 +11,7 @@ async def get_img(type: str, amount: int = 1) -> Union[Result, list[Result]]:
 
 loop = asyncio.get_event_loop()
 
-loop.run_until_complete(get_img("lurk"))
+loop.run_until_complete(get_img("shoot"))
 # loop.run_until_complete(get_img("neko", 2))
 
 loop.close()
