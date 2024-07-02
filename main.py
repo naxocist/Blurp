@@ -118,6 +118,14 @@ async def g(ctx) -> None:
         author_id = ids[message.author]
 
         assigned_animes[pairs[author_id]] = MAL_id
+    
+@bot.command()
+async def pt(ctx, tag) -> None:
+    # if not isinstance(tag, discord.Member.mention):
+    #     await ctx.send("Please tag someone!")
+    
+    print(type(tag))
+    await ctx.send(tag)
 
 
 @bot.event

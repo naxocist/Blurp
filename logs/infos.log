@@ -1,3 +1,17 @@
-WARNING    - 2024-07-01 01:45:46,334 - client          : PyNaCl is not installed, voice will NOT be supported
-INFO       - 2024-07-01 01:45:46,335 - client          : logging in using static token
-INFO       - 2024-07-01 01:45:48,096 - gateway         : Shard ID None has connected to Gateway (Session ID: d0aca56fd5f372647abafed437a365f6).
+WARNING    - 2024-07-02 17:43:03,683 - client          : PyNaCl is not installed, voice will NOT be supported
+INFO       - 2024-07-02 17:43:03,686 - client          : logging in using static token
+INFO       - 2024-07-02 17:43:05,369 - gateway         : Shard ID None has connected to Gateway (Session ID: c375b3e30655bae56aeabbb3b3997450).
+ERROR      - 2024-07-02 17:43:10,780 - bot             : Ignoring exception in command pt
+Traceback (most recent call last):
+  File "D:\AniSoul\Lib\site-packages\discord\ext\commands\bot.py", line 1350, in invoke
+    await ctx.command.invoke(ctx)
+  File "D:\AniSoul\Lib\site-packages\discord\ext\commands\core.py", line 1021, in invoke
+    await self.prepare(ctx)
+  File "D:\AniSoul\Lib\site-packages\discord\ext\commands\core.py", line 938, in prepare
+    await self._parse_arguments(ctx)
+  File "D:\AniSoul\Lib\site-packages\discord\ext\commands\core.py", line 845, in _parse_arguments
+    transformed = await self.transform(ctx, param, attachments)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\AniSoul\Lib\site-packages\discord\ext\commands\core.py", line 697, in transform
+    raise MissingRequiredArgument(param)
+discord.ext.commands.errors.MissingRequiredArgument: tag is a required argument that is missing.
