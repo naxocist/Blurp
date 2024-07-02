@@ -102,6 +102,7 @@ async def g(ctx) -> None:
         embed_pick.set_footer(icon_url=bot.user.avatar.url, text="This person will be guessing the chosen anime...")
 
         await p.send(embed=embed_pick)
+
         task = asyncio.create_task(bot.wait_for('message', check=lambda m: m.author == p and isinstance(m.channel, discord.DMChannel), timeout=5))
         tasks.append(task)
     
