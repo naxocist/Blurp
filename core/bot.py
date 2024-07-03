@@ -20,14 +20,16 @@ class Bot(commands.Bot):
         self.activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
     
 
-    async def setup_hook(self) -> None:
+    async def setup_hook(self):
         for file in os.listdir('cogs'):
             if not file.startswith('_'):
                 await self.load_extension(f"cogs.{file}.plugin")
     
 
-    async def on_ready(self) -> None:
+    async def on_ready(self):
         log.info(f"logged in as {self.user}")
+
+        await self.tree.sync()
     
 
     async def success(self, content: str, Interaction: discord.Interaction, ephemeral: Optional[bool]):
@@ -36,4 +38,3 @@ class Bot(commands.Bot):
 
     async def error(self, content: str, Interaction: discord.Interaction, ephemeral: Optional[bool]):
         pass
-

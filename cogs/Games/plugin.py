@@ -4,7 +4,6 @@ from .. import Plugin
 
 import discord
 from discord.ext import commands
-from discord.ext.commands.context import Context
 
 import asyncio
 import random
@@ -28,7 +27,7 @@ class Games(Plugin):
 
         # await ctx.send(f"The game starts in {voice_channel.mention}")
 
-        await ctx.send(embed=discord.Embed(title='If you want to join this game, type \"join\"'))
+        await ctx.send("If you want to join this game, type **join**")
 
         while True:
             try:
@@ -47,7 +46,7 @@ class Games(Plugin):
 
                 random.shuffle(players)
 
-                description = 'Here\'s the players order..\n'
+                description = 'Here\'s the players...\n'
                 for idx, player in enumerate(players, start=1):
                     description += f'#{idx}: {player.mention}\n'
                 
@@ -78,18 +77,19 @@ class Games(Plugin):
         assigned_animes = {}
         for task in done:
             if task.exception():
-                # This player didn't send anime id
+                # This player didn't send anime id, therefore random an anime
                 continue
 
             message = task.result()
-
             MAL_id = message.content
-            author_id = ids[message.author]
+            # validate MAL id
 
+            author_id = ids[message.author]
             assigned_animes[pairs[author_id]] = MAL_id
 
         turn = 0
         while True:
+            await ctx.send(players[turn].mention + ", it's your turn!")
 
             turn += 1
             turn %= len(players)

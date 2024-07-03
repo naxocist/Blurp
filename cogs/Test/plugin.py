@@ -4,7 +4,7 @@ from .. import Plugin
 
 import discord
 from discord.ext import commands
-from discord.ext.commands.context import Context
+from discord import app_commands
 
 
 class TestCog(Plugin):
@@ -14,6 +14,7 @@ class TestCog(Plugin):
     @commands.command()
     async def ping(self, ctx):
         await ctx.send("pong!")
+    
 
     @commands.command()
     async def embed(self, ctx):
