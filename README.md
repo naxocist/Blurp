@@ -1,7 +1,9 @@
 # Helix
 
-<img src="./assets/profile.jpeg" width=200>
-<img src="./assets/discordpy.png" width=174>
+<div>
+  <img src="./assets/profile.jpeg" width=200>
+  <img src="./assets/discordpy.png" width=174>
+</div>
 
 <br>
 
