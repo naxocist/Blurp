@@ -10,21 +10,20 @@ Api used in this project
 """
 
 def get_response(user_input: str) -> str:
+  title, synopsis, names = random_anime()
 
-    title, synopsis, names = random_anime()
+  names_str = ""
+  for n in names:
+      names_str += f"\"{n}\", "
 
-    names_str = ""
-    for n in names:
-        names_str += f"\"{n}\", "
+  setup = f"""Now, you are anime related bot helper. Generate 5 hints of the anime named {title} with following rules
+            1. do not use these words [{names_str}]
+            2. do not reveal the anime name
+            """
 
-    setup = f"""Now, you are anime related bot helper. Generate 5 hints of the anime named {title} with following rules
-                1. do not use these words [{names_str}]
-                2. do not reveal the anime name
-                """
+  prompt = setup + synopsis
+  print(title)
 
-    prompt = setup + synopsis
-    print(title)
+  res = text_gen(prompt) 
 
-    res = text_gen(prompt) 
-
-    return res
+  return res

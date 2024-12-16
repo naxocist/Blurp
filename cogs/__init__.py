@@ -5,15 +5,13 @@ from core import Bot
 from logging import getLogger; log = getLogger(__name__)
 
 __all__ = (
-    "Plugin",
+  "Plugin",
 )
 
 class Plugin(Cog):
-    def __init__(self, bot: Bot):
-        super().__init__()
-    
+  def __init__(self, bot: Bot):
+    super().__init__()
+  
 
-    async def cog_load(self):
-        log.info(f"Loaded {self.qualified_name} cog")
-    
-    
+  async def cog_load(self):
+    log.info(f"Loaded {self.qualified_name} cog")

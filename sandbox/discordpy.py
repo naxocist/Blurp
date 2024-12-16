@@ -99,25 +99,25 @@ async def show_join_date(interaction: discord.Interaction, member: discord.Membe
 # This context menu command only works on messages
 @client.tree.context_menu(name='Report to Moderators')
 async def report_message(interaction: discord.Interaction, message: discord.Message):
-    # We're sending this response message with ephemeral=True, so only the command executor can see it
-    await interaction.response.send_message(
-        f'Thanks for reporting this message by {message.author.mention} to our moderators.', ephemeral=True
-    )
+  # We're sending this response message with ephemeral=True, so only the command executor can see it
+  await interaction.response.send_message(
+      f'Thanks for reporting this message by {message.author.mention} to our moderators.', ephemeral=True
+  )
 
-    # Handle report by sending it into a log channel
-    log_channel = interaction.guild.get_channel(0)  # replace with your channel id
+  # Handle report by sending it into a log channel
+  log_channel = interaction.guild.get_channel(0)  # replace with your channel id
 
-    embed = discord.Embed(title='Reported Message')
-    if message.content:
-        embed.description = message.content
+  embed = discord.Embed(title='Reported Message')
+  if message.content:
+      embed.description = message.content
 
-    embed.set_author(name=message.author.display_name, icon_url=message.author.display_avatar.url)
-    embed.timestamp = message.created_at
+  embed.set_author(name=message.author.display_name, icon_url=message.author.display_avatar.url)
+  embed.timestamp = message.created_at
 
-    url_view = discord.ui.View()
-    url_view.add_item(discord.ui.Button(label='Go to Message', style=discord.ButtonStyle.url, url=message.jump_url))
+  url_view = discord.ui.View()
+  url_view.add_item(discord.ui.Button(label='Go to Message', style=discord.ButtonStyle.url, url=message.jump_url))
 
-    await log_channel.send(embed=embed, view=url_view)
+  await log_channel.send(embed=embed, view=url_view)
 
 
 
@@ -139,11 +139,11 @@ class Feedback(discord.ui.Modal, title='Feedback'):
     # only accept a maximum of 300 characters, as denoted by the
     # `max_length=300` kwarg.
     feedback = discord.ui.TextInput(
-        label='What do you think of this new feature?',
-        style=discord.TextStyle.long,
-        placeholder='Type your feedback here...',
-        required=False,
-        max_length=300,
+      label='What do you think of this new feature?',
+      style=discord.TextStyle.long,
+      placeholder='Type your feedback here...',
+      required=False,
+      max_length=300,
     )
 
     async def on_submit(self, interaction: discord.Interaction):

@@ -7,34 +7,33 @@ from logging import getLogger; log = getLogger("Bot")
 import discord
 
 __all__ = (
-    "Bot",
+  "Bot",
 )
 
 class Bot(commands.Bot):
-    def __init__(self):
-        super().__init__(
-            command_prefix=".",
-            intents=discord.Intents.all(),
-        )
+  def __init__(self):
+    super().__init__(
+      command_prefix=".",
+      intents=discord.Intents.all(),
+    )
 
-        self.activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
-    
+    self.activity = discord.Activity(name='for commands', type=discord.ActivityType.watching)
+  
 
-    async def setup_hook(self):
-        for file in os.listdir('cogs'):
-            if not file.startswith('_'):
-                await self.load_extension(f"cogs.{file}.plugin")
-    
+  async def setup_hook(self):
+    for file in os.listdir('cogs'):
+      if not file.startswith('_'):
+        await self.load_extension(f"cogs.{file}.plugin")
+  
 
-    async def on_ready(self):
-        log.info(f"logged in as {self.user}")
+  async def on_ready(self):
+    log.info(f"logged in as {self.user}")
+    await self.tree.sync()
+  
 
-        await self.tree.sync()
-    
-
-    async def success(self, content: str, Interaction: discord.Interaction, ephemeral: Optional[bool]):
-        pass
+  async def success(self, content: str, Interaction: discord.Interaction, ephemeral: Optional[bool]):
+    pass
 
 
-    async def error(self, content: str, Interaction: discord.Interaction, ephemeral: Optional[bool]):
-        pass
+  async def error(self, content: str, Interaction: discord.Interaction, ephemeral: Optional[bool]):
+    pass

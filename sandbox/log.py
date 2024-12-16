@@ -5,13 +5,13 @@ from logging.config import dictConfig
 #                     format="%(asctime)s | %(filename)s - %(levelname)s - %(message)s")
 
 config = {
-    'version': 1,
-    'disable_existing_logger': False,
-    'Loggers': {
-        "": {
-            'level': "DEBUG"
-        }
+  'version': 1,
+  'disable_existing_logger': False,
+  'Loggers': {
+    "": {
+        'level': "DEBUG"
     }
+  }
 }
 
 dictConfig(config)
