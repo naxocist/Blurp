@@ -1,5 +1,0 @@
-discord.py
-jikanpy
-huggingface-hub
-nekosbest
-PyNaCl
