@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Final
 
 import os
@@ -8,7 +7,7 @@ from typing import Final
 from logging.config import dictConfig
 
 load_dotenv()
-TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
+TOKEN: Final[str] = os.getenv("DISCORD_TOKEN")
 
 LOGGING_CONFIG = {
   "version": 1,

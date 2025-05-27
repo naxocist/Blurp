@@ -1,6 +1,7 @@
 .venv
 .env
 pyvenv.cfg
+.prettierrc
 
 __pycache__
 Include
