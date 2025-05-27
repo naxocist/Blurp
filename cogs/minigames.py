@@ -17,7 +17,12 @@ class MiniGames(commands.Cog):
     Each player will then take turns to ask for a hint from other player about the anime they was assigned to.
     """
 
-    await ctx.respond("This feature is under development. Stay tuned for updates!")
+    await ctx.respond(embed=discord.Embed(
+      title="Anime Cycle has been started!",
+      color=discord.Color.green()
+    ), view=discord.ui.View().add_item(
+      discord.ui.Button(label="Join", style=discord.ButtonStyle.green, custom_id="join_cycle")
+    ))
 
 
 def setup(bot):

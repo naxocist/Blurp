@@ -2,8 +2,7 @@ import discord
 from credentials import DISCORD_TOKEN
 
 
-intents = discord.Intents.default()
-intents.message_content = True 
+intents = discord.Intents.all()
 
 bot = discord.Bot(description="The versatile anime related discord bot", intents=intents)
 bot.activity = discord.Activity(name="anime", type=discord.ActivityType.watching)
