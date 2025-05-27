@@ -8,7 +8,7 @@ intents.message_content = True
 bot = discord.Bot(description="The versatile anime related discord bot", intents=intents)
 bot.activity = discord.Activity(name="anime", type=discord.ActivityType.watching)
 
-cogs_list = ["animes", "events"]
+cogs_list = ["animes", "events", "minigames"]
 
 if __name__ == "__main__":
   print("Loading cogs...")
