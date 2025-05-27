@@ -1,7 +1,7 @@
 import discord
 from discord.ext import commands
 
-from credentials import TEST_GUILD_ID
+from credentials import TEST_GUILD_ID, FRIEND_TEST_GUILD_ID
 
 
 class MiniGames(commands.Cog):
@@ -9,7 +9,7 @@ class MiniGames(commands.Cog):
   def __init__(self, bot): 
     self.bot = bot
   
-  @commands.slash_command(guild_ids=[TEST_GUILD_ID], description="Start a anime cycle game")
+  @commands.slash_command(guild_ids=[TEST_GUILD_ID, FRIEND_TEST_GUILD_ID], description="Start a anime cycle game")
   async def cycle(self, ctx):
     """
     This game will assign each player a another random player.

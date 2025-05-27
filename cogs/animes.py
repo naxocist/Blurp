@@ -3,15 +3,16 @@ from discord.ext import commands
 from utils.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
 from utils.jikanv4 import get_random_anime
 
-from credentials import TEST_GUILD_ID
+from credentials import TEST_GUILD_ID, FRIEND_TEST_GUILD_ID
 
+guild_ids = [TEST_GUILD_ID, FRIEND_TEST_GUILD_ID]
 
 class Animes(commands.Cog):
 
   def __init__(self, bot): 
     self.bot = bot
   
-  @commands.slash_command(guild_ids=[TEST_GUILD_ID], description="Show your expression")
+  @commands.slash_command(guild_ids=guild_ids, description="Show your expression")
   async def expression(self, ctx, action: str = discord.Option(str, "What expression do you want to show?", choices=expressions)):
     image = await get_img(action)
     is_phrase_action = to_is_phrase(action)
@@ -21,7 +22,7 @@ class Animes(commands.Cog):
     )
     await ctx.respond(f"{ctx.author.mention} {is_phrase_action}!", embed=embed)
 
-  @commands.slash_command(guild_ids=[TEST_GUILD_ID], description="Perform an action to another user") 
+  @commands.slash_command(guild_ids=guild_ids, description="Perform an action to another user") 
   async def action(self, ctx, member: discord.Member, action: str = discord.Option(str, "What action do you want to perform?", choices=actions_to_others)):
     image = await get_img(action)
     embed = discord.Embed(
@@ -32,7 +33,7 @@ class Animes(commands.Cog):
     if action == "dance": action += " with"
     await ctx.respond(f"{ctx.author.mention} wants to {action} {member.mention}!", embed=embed)
 
-  @commands.slash_command(guild_ids=[TEST_GUILD_ID], description="Get a random anime illustration")
+  @commands.slash_command(guild_ids=guild_ids, description="Get a random anime illustration")
   async def art(self, ctx, choice: str = discord.Option(str, "Choose your type", choices=["husbando", "kitsune", "neko", "waifu"])):
     result = await get_img(choice)
 
@@ -49,7 +50,7 @@ class Animes(commands.Cog):
     )
     await ctx.respond(embed=embed)
 
-  @commands.slash_command(guild_ids=[TEST_GUILD_ID], description="Get a random anime")
+  @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
   # @commands.cooldown(1, 5, commands.BucketType.user)  # Limit to 1 use every 5 seconds
   async def anime(self, ctx):
     await ctx.defer()
