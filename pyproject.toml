@@ -5,7 +5,10 @@ description = "The versatile anime discord bot"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
+    "aiolimiter>=1.2.1",
     "audioop-lts>=0.2.1",
+    "dotmap>=1.3.30",
+    "jikanpy-v4>=1.0.2",
     "lemminflect>=0.2.3",
     "nekosbest>=1.1.13",
     "openai>=1.82.0",

@@ -28,6 +28,7 @@ expressions = [
 
 adjectives_or_non_verbs = ["angry", "bored", "happy", "smug", "thumbsup", "nope"]
 
+
 # Convert a word to an "is" phrase
 def to_is_phrase(word):
   if word in adjectives_or_non_verbs:

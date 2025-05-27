@@ -1,6 +1,6 @@
 import discord
-from dotenv import load_dotenv
-import os
+from credentials import DISCORD_TOKEN
+
 
 intents = discord.Intents.default()
 intents.message_content = True 
@@ -19,5 +19,4 @@ if __name__ == "__main__":
     except Exception as e:
       print(f"Failed to load {cog}: {e}")
 
-  load_dotenv()
-  bot.run(os.getenv("TOKEN"))
+  bot.run(DISCORD_TOKEN)
