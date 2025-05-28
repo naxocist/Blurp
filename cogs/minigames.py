@@ -16,22 +16,27 @@ class cycleGame():
   def __init__(self):
     self.players = []
     self.assigned_mal_ids = {}
-    self.pairs = []
+    self.assigned_players = {}
     self.current_player_index = 0
 
   def add_player(self, player):
-    # if player not in self.players:
     self.players.append(player)
     players_games[player] = self # Store the game for the player
 
-  # find derangement of a list
+  # find derangement of a list and assign each player to another player
   def random_pairs(self):
-    self.pairs = [i for i in range(len(self.players))]
+    pairs = [i for i in range(len(self.players))]
     # Expected time complexity: ~ O(n)*e
     while True:
       random.shuffle(self.pairs)
       if all(self.pairs[i] != i for i in range(len(self.pairs))):
         break
+    
+    for idx, player in enumerate(self.players):
+      self.assigned_players[player] = self.players[pairs[idx]]
+  
+  def current_player(self):
+    return self.players[self.current_player_index]
 
   def next_player(self):
     self.current_player_index = (self.current_player_index + 1) % len(self.players)
@@ -118,8 +123,8 @@ class MiniGames(commands.Cog):
       )
     )
 
-    for i, player in enumerate(cycle_object.players):
-      assigned_player = cycle_object.players[cycle_object.pairs[i]]
+    for player in cycle_object.players:
+      assigned_player = cycle_object.assigned_players[player]
       await player.send(
         embed=discord.Embed(
           description=f"**{player.mention}**, you are assigned to **{assigned_player.mention}!**",
@@ -138,21 +143,31 @@ class MiniGames(commands.Cog):
     )
 
     timer = 10
-    while len(cycle_object.assigned_mal_ids) < len(cycle_object.players):
+    while timer > 0:
       await asyncio.sleep(1)  # ping every 1s
       timer -= 1
-      if timer == 0:
-        await ctx.send(
-          embed=discord.Embed(
-            title="Anime Cycle game cancelled",
-            description="Not all players picked an anime in time.",
-            color=discord.Color.red()
-          )
+    
+    if len(cycle_object.assigned_mal_ids) < len(cycle_object.players):
+      await ctx.send(
+        embed=discord.Embed(
+          title="Anime Cycle game cancelled",
+          description="Not all players picked an anime in time.",
+          color=discord.Color.red()
         )
-        cycle_object.clean_up()
-        return 
+      )
+      cycle_object.clean_up()
+      return 
     
 
+    # while True:
+    #   ctx.send(
+    #     embed=discord.Embed(
+    #       title=f"It's {cycle_object.next_player().mention}'s turn!",
+    #       description="Use `/cycle answer <anime_id>` command to answer the anime.",
+    #       color=discord.Color.green()
+    #     )
+    #   )
+      
     
     cycle_object.clean_up()
   
@@ -175,12 +190,12 @@ class MiniGames(commands.Cog):
     
     title = result.data.title
     url = result.data.url
+    mal_id = result.data.mal_id
     
-    pair = cycle_object.pairs[cycle_object.players.index(member)] # get index of assigned player
-    pair_member = cycle_object.players[pair] # get member object of assigned player
+    assigned_player = cycle_object.assigned_player[member] # get member object of assigned player
 
-    cycle_object.assigned_mal_ids[pair] = result.data.mal_id
-    await ctx.respond(f"{ctx.author.mention}: You picked [{title}]({url}) for {pair_member.mention}!", ephemeral=True)
+    cycle_object.assigned_mal_ids[assigned_player] = mal_id
+    await ctx.respond(f"{member.mention}: You picked [{title}]({url}) for {assigned_player.mention}!", ephemeral=True)
   
   @cycle.command(guild_ids=guild_ids, description="Submit your answer here!")
   async def answer(self, ctx, anime_id: int):
@@ -195,12 +210,10 @@ class MiniGames(commands.Cog):
       await ctx.respond(f"{member.mention}: You are not in any anime cycle game.", ephemeral=True)
       return
 
-    idx = cycle_object.players.index(member)
-    if idx != cycle_object.current_player_index:
+    if member != cycle_object.current_player():
       await ctx.respond(f"{member.mention}: It's not your turn yet!", ephemeral=True)
       return
 
-    assigned_mal_id = cycle_object.assigned_mal_ids[idx]
 
     result = await get_anime_by_id(anime_id)
     if not result:
@@ -211,12 +224,13 @@ class MiniGames(commands.Cog):
     url = result.data.url
     mal_id = result.data.mal_id
 
+    assigned_mal_id = cycle_object.assigned_mal_ids[member]
     if assigned_mal_id == mal_id:
-      await ctx.respond(f"{member.author.mention} You guessed it right! The anime is [{title}]({url})", ephemeral=True)
+      await ctx.respond(f"{member.mention} You guessed it right! The anime is [{title}]({url})", ephemeral=True)
       cycle_object.clean_up()
       return
 
-    await ctx.respond(f"{ctx.author.mention} Wrong answer! Try again...", ephemeral=True)
+    await ctx.respond(f"{member.mention} Wrong answer! Try again...", ephemeral=True)
 
 
 
