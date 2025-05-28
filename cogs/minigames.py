@@ -15,7 +15,7 @@ players_games = {} # global temporary dictionary for players and their games
 class cycleGame():
   def __init__(self):
     self.players = []
-    self.assigned_animes = []
+    self.assigned_mal_ids = {}
     self.pairs = []
     self.current_player_index = 0
 
@@ -26,12 +26,12 @@ class cycleGame():
 
   # find derangement of a list
   def random_pairs(self):
-    tmp = [i for i in range(len(self.players))]
-    self.pairs = []
-    while len(self.pairs) < len(self.players):
-      random.shuffle(tmp)
-      self.pairs.append(tmp[0])
-      tmp.remove(tmp[0])
+    self.pairs = [i for i in range(len(self.players))]
+    # Expected time complexity: ~ O(n)*e
+    while True:
+      random.shuffle(self.pairs)
+      if all(self.pairs[i] != i for i in range(len(self.pairs))):
+        break
 
   def next_player(self):
     self.current_player_index = (self.current_player_index + 1) % len(self.players)
@@ -91,8 +91,11 @@ class MiniGames(commands.Cog):
 
     await view.wait()
 
-    cycle_object.add_player(ctx.author)
-    print(cycle_object)
+    # TEST Variable
+    # cycle_object.add_player(ctx.author)
+    # cycle_object.add_player(self.bot.user)
+    # cycle_object.assigned_mal_ids[0] = 9776
+
     if len(cycle_object.players) < 2:
       await ctx.send(
         embed=discord.Embed(
@@ -115,6 +118,16 @@ class MiniGames(commands.Cog):
       )
     )
 
+    for i, player in enumerate(cycle_object.players):
+      assigned_player = cycle_object.players[cycle_object.pairs[i]]
+      await player.send(
+        embed=discord.Embed(
+          description=f"**{player.mention}**, you are assigned to **{assigned_player.mention}!**",
+        )
+      )
+    
+    await ctx.send("Pairing has been sent to each player via DM.")
+
     # each players pick an anime for their assigned player using /pick command
     await ctx.send(
       embed=discord.Embed(
@@ -125,7 +138,7 @@ class MiniGames(commands.Cog):
     )
 
     timer = 10
-    while len(cycle_object.assigned_animes) < len(cycle_object.players):
+    while len(cycle_object.assigned_mal_ids) < len(cycle_object.players):
       await asyncio.sleep(1)  # ping every 1s
       timer -= 1
       if timer == 0:
@@ -138,6 +151,8 @@ class MiniGames(commands.Cog):
         )
         cycle_object.clean_up()
         return 
+    
+
     
     cycle_object.clean_up()
   
@@ -161,10 +176,47 @@ class MiniGames(commands.Cog):
     title = result.data.title
     url = result.data.url
     
-    pair = cycle_object.players.index(member)
-    pair_member = cycle_object.players[pair]
-    cycle_object.assigned_animes[pair] = result
+    pair = cycle_object.pairs[cycle_object.players.index(member)] # get index of assigned player
+    pair_member = cycle_object.players[pair] # get member object of assigned player
+
+    cycle_object.assigned_mal_ids[pair] = result.data.mal_id
     await ctx.respond(f"{ctx.author.mention}: You picked [{title}]({url}) for {pair_member.mention}!", ephemeral=True)
+  
+  @cycle.command(guild_ids=guild_ids, description="Submit your answer here!")
+  async def answer(self, ctx, anime_id: int):
+    """
+    Submit your answer here!
+    If you are correct, you will win the game.
+    """
+    member = ctx.author
+    cycle_object = players_games.get(member)
+
+    if not cycle_object:
+      await ctx.respond(f"{member.mention}: You are not in any anime cycle game.", ephemeral=True)
+      return
+
+    idx = cycle_object.players.index(member)
+    if idx != cycle_object.current_player_index:
+      await ctx.respond(f"{member.mention}: It's not your turn yet!", ephemeral=True)
+      return
+
+    assigned_mal_id = cycle_object.assigned_mal_ids[idx]
+
+    result = await get_anime_by_id(anime_id)
+    if not result:
+      await ctx.respond(f"{member.mention} invalid anime id provided.", ephemeral=True)
+      return
+
+    title = result.data.title
+    url = result.data.url
+    mal_id = result.data.mal_id
+
+    if assigned_mal_id == mal_id:
+      await ctx.respond(f"{member.author.mention} You guessed it right! The anime is [{title}]({url})", ephemeral=True)
+      cycle_object.clean_up()
+      return
+
+    await ctx.respond(f"{ctx.author.mention} Wrong answer! Try again...", ephemeral=True)
 
 
 
