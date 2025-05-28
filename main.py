@@ -1,6 +1,8 @@
 import discord
 from credentials import DISCORD_TOKEN
+from logging_config import setup_logging
 
+setup_logging()
 
 intents = discord.Intents.all()
 

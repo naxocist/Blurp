@@ -1,23 +1,23 @@
 import discord
 from discord.ext import commands
-from credentials import TEST_GUILD_ID, FRIEND_TEST_GUILD_ID
 import random
 import asyncio
 
 from utils.jikanv4 import get_anime_by_id
 
-guild_ids = [TEST_GUILD_ID]
+from credentials import guild_ids
 
-cycle_game_list = [] # global temporary list for cycle games
+minigame_objects = [] # global temporary list for minigame objects
 players_games = {} # global temporary dictionary for players and their games
 
 
-class cycleGame():
+class CycleClass():
   def __init__(self):
     self.players = []
     self.assigned_mal_ids = {}
     self.assigned_players = {}
     self.current_player_index = 0
+    self.done = []
 
   def add_player(self, player):
     self.players.append(player)
@@ -25,11 +25,12 @@ class cycleGame():
 
   # find derangement of a list and assign each player to another player
   def random_pairs(self):
+    random.shuffle(self.players)
     pairs = [i for i in range(len(self.players))]
     # Expected time complexity: ~ O(n)*e
     while True:
-      random.shuffle(self.pairs)
-      if all(self.pairs[i] != i for i in range(len(self.pairs))):
+      random.shuffle(pairs)
+      if all(pairs[i] != i for i in range(len(pairs))):
         break
     
     for idx, player in enumerate(self.players):
@@ -38,44 +39,26 @@ class cycleGame():
   def current_player(self):
     return self.players[self.current_player_index]
 
-  def next_player(self):
+  def advance(self):
     self.current_player_index = (self.current_player_index + 1) % len(self.players)
-    return self.players[self.current_player_index]
   
   def clean_up(self):
     # clean up the game 
     for player in self.players:
       players_games.pop(player, None)
 
-    if self in cycle_game_list:
-      cycle_game_list.remove(self)
+    if self in minigame_objects:
+      minigame_objects.remove(self)
     
-
-class JoinGame(discord.ui.View): 
-
-  def __init__(self, cycle_object, *args, **kwargs):
-    super().__init__(*args, **kwargs)
-    self.cycle_object = cycle_object
-
-  @discord.ui.button(label="click to join", style=discord.ButtonStyle.green, emoji="🤓") 
-  async def button_callback(self, button, interaction):
-    member = interaction.user
-    if(member in self.cycle_object.players):
-      await interaction.response.send_message(f"{member.mention}: You are already in the game!", ephemeral=True)
-      return
-
-    self.cycle_object.add_player(member)
-    await interaction.response.send_message(f"{member.mention} joined!")
-
 
 class MiniGames(commands.Cog):
 
   def __init__(self, bot): 
     self.bot = bot
   
-  cycle = discord.SlashCommandGroup("cycle", "cycle game commands")
+  cycle = discord.SlashCommandGroup("cycle", "cycle game commands", guild_ids=guild_ids)
 
-  @cycle.command(guild_ids=guild_ids, description="Start an anime cycle game")
+  @cycle.command(description="Start an anime cycle game")
   async def start(self, ctx):
     """
     This game will assign each player a another random player.
@@ -85,22 +68,42 @@ class MiniGames(commands.Cog):
     Who knows the anime first wins!
     """
 
-    cycle_object = cycleGame()
-    cycle_game_list.append(cycle_object)
+    await ctx.defer()
 
-    view = JoinGame(cycle_object, timeout=5, disable_on_timeout=True)
+    cycle_object = CycleClass()
+    minigame_objects.append(cycle_object)
+
+    start_view = discord.ui.View(timeout=5, disable_on_timeout=True)
+    start_button = discord.ui.Button( label="click to join", style=discord.ButtonStyle.green, emoji="🤓")
+
+    async def start_callback(interaction):
+      nonlocal cycle_object
+
+      member = interaction.user
+      if member in cycle_object.players:
+        await interaction.response.send_message(f"{member.mention}: You are already in the game!", ephemeral=True)
+        return
+
+      cycle_object.add_player(member)
+      await interaction.response.send_message(f"{member.mention} joined!")
+      
+    start_button.callback = start_callback
+    start_view.add_item(start_button)
+
     await ctx.respond(
       embed=discord.Embed(title="Anime Cycle has been started!", color=discord.Color.green()), 
-      view=view
+      view=start_view
     )
 
-    await view.wait()
+    # wait for players to join the game
+    await start_view.wait()
 
     # TEST Variable
-    # cycle_object.add_player(ctx.author)
-    # cycle_object.add_player(self.bot.user)
-    # cycle_object.assigned_mal_ids[0] = 9776
+    cycle_object.add_player(ctx.author)
+    cycle_object.add_player(self.bot.user)
+    cycle_object.assigned_mal_ids[ctx.author] = 9776
 
+    # too few players to start the game
     if len(cycle_object.players) < 2:
       await ctx.send(
         embed=discord.Embed(
@@ -112,9 +115,7 @@ class MiniGames(commands.Cog):
       cycle_object.clean_up()
       return
 
-    # assigned players for every players
-    cycle_object.random_pairs()
-
+    # show lobby status
     await ctx.send(
       embed=discord.Embed(
         title="Lobby",
@@ -123,21 +124,25 @@ class MiniGames(commands.Cog):
       )
     )
 
-    for player in cycle_object.players:
-      assigned_player = cycle_object.assigned_players[player]
-      await player.send(
-        embed=discord.Embed(
-          description=f"**{player.mention}**, you are assigned to **{assigned_player.mention}!**",
-        )
-      )
-    
-    await ctx.send("Pairing has been sent to each player via DM.")
+    # gives assigned players to every players
+    cycle_object.random_pairs()
+
+    # notify players about their assigned player via DM
+    # for player in cycle_object.players:
+    #   assigned_player = cycle_object.assigned_players[player]
+    #   await player.send(
+    #     embed=discord.Embed(
+    #       description=f"**{player.mention}**: You need to pick an anime for **{assigned_player.mention}!**",
+    #       color=discord.Color.purple()
+    #     )
+    #   )
+    # await ctx.send("Pairing has been sent to every player via DM.")
 
     # each players pick an anime for their assigned player using /pick command
     await ctx.send(
       embed=discord.Embed(
         title="use `/cycle pick <anime_id>` command to pick an anime for your assigned player",
-        description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only",
+        description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only\nExample: https://myanimelist.net/anime/9776/A-Channel\n**9776** is the anime id",
         color=discord.Color.yellow()
       )
     )
@@ -146,7 +151,10 @@ class MiniGames(commands.Cog):
     while timer > 0:
       await asyncio.sleep(1)  # ping every 1s
       timer -= 1
-    
+      if len(cycle_object.assigned_mal_ids) == len(cycle_object.players):
+        break
+
+    # someone didn't pick an anime in time
     if len(cycle_object.assigned_mal_ids) < len(cycle_object.players):
       await ctx.send(
         embed=discord.Embed(
@@ -159,19 +167,53 @@ class MiniGames(commands.Cog):
       return 
     
 
-    # while True:
-    #   ctx.send(
-    #     embed=discord.Embed(
-    #       title=f"It's {cycle_object.next_player().mention}'s turn!",
-    #       description="Use `/cycle answer <anime_id>` command to answer the anime.",
-    #       color=discord.Color.green()
-    #     )
-    #   )
-      
+    # Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
+    while len(cycle_object.done) < len(cycle_object.players):
+      continue_view = discord.ui.View(timeout=10, disable_on_timeout=True)
+      continue_button = discord.ui.Button(
+        label="next", 
+        style=discord.ButtonStyle.green, 
+        emoji="▶️",
+      )
+
+      async def continue_callback(interaction):
+        nonlocal continue_view
+        continue_view.stop()
+        await interaction.response.defer() 
+
+      continue_button.callback = continue_callback
+      continue_view.add_item(continue_button)
+
+      current_player = cycle_object.current_player()
+      if current_player in cycle_object.done:
+        cycle_object.advance()
+        continue
+
+      message = await ctx.send(
+        embed=discord.Embed(
+          description=f"{current_player.mention}'s turn! Ask for some hints🤔\n If you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+          color=discord.Color.purple(),
+        ),
+        view=continue_view
+      )
+
+      await continue_view.wait()
+      if continue_view.is_finished():
+        cycle_object.advance()
+        continue_view.disable_all_items()
+        await message.edit(view=continue_view)
+
     
+    await ctx.send(
+      embed=discord.Embed(
+        title="Anime Cycle terminated!",
+        color=discord.Color.green(),
+      )
+    )
+
     cycle_object.clean_up()
   
-  @cycle.command(guild_ids=guild_ids, description="Pick an anime for your assigned player")
+  @cycle.command(description="Pick an anime for your assigned player")
   async def pick(self, ctx, anime_id: int):
     """
     Pick an anime for assigned player using MAL anime id.
@@ -192,12 +234,17 @@ class MiniGames(commands.Cog):
     url = result.data.url
     mal_id = result.data.mal_id
     
-    assigned_player = cycle_object.assigned_player[member] # get member object of assigned player
+    assigned_player = cycle_object.assigned_players[member] # get member object of assigned player
 
     cycle_object.assigned_mal_ids[assigned_player] = mal_id
     await ctx.respond(f"{member.mention}: You picked [{title}]({url}) for {assigned_player.mention}!", ephemeral=True)
+
+    req = len(cycle_object.assigned_mal_ids) - len(cycle_object.players)
+    if req > 0: 
+      await ctx.send(embed=discord.Embed(description=f"There are {req} players who still need to pick an anime.", color=discord.Color.yellow()))
+    
   
-  @cycle.command(guild_ids=guild_ids, description="Submit your answer here!")
+  @cycle.command(description="Submit your answer here!")
   async def answer(self, ctx, anime_id: int):
     """
     Submit your answer here!
@@ -226,8 +273,8 @@ class MiniGames(commands.Cog):
 
     assigned_mal_id = cycle_object.assigned_mal_ids[member]
     if assigned_mal_id == mal_id:
-      await ctx.respond(f"{member.mention} You guessed it right! The anime is [{title}]({url})", ephemeral=True)
-      cycle_object.clean_up()
+      await ctx.respond(f"{member.mention} guessed it right! {member.mention}'s assigned anime is [{title}]({url})")
+      cycle_object.done.append(member)
       return
 
     await ctx.respond(f"{member.mention} Wrong answer! Try again...", ephemeral=True)

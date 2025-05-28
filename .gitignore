@@ -2,6 +2,7 @@
 .env
 pyvenv.cfg
 .prettierrc
+discord.log
 
 __pycache__
 Include

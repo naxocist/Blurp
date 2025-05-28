@@ -3,9 +3,7 @@ from discord.ext import commands
 from utils.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
 from utils.jikanv4 import get_random_anime
 
-from credentials import TEST_GUILD_ID, FRIEND_TEST_GUILD_ID
-
-guild_ids = [TEST_GUILD_ID]
+from credentials import guild_ids
 
 class Animes(commands.Cog):
 
