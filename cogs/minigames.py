@@ -12,18 +12,25 @@ players_games = {} # global temporary dictionary for players and their games
 
 
 class CycleClass():
+  join_timeout = 10 # seconds to join the game
+  pick_timeout = 10 # seconds to pick an anime
+  turn_timeout = 10 # seconds to take a turn
+  phase = "lobby" # current phase of the game, can be "lobby", "picking", "turns"
+
   def __init__(self):
+    minigame_objects.append(self) # add this object to the global list
     self.players = []
     self.assigned_mal_ids = {}
     self.assigned_players = {}
     self.current_player_index = 0
     self.done = []
 
+  # add player to the game
   def add_player(self, player):
     self.players.append(player)
-    players_games[player] = self # Store the game for the player
+    players_games[player] = self # store which game the player is in
 
-  # find derangement of a list and assign each player to another player
+  # shuffle and find derangements of players, then assigned players to each other
   def random_pairs(self):
     random.shuffle(self.players)
     pairs = [i for i in range(len(self.players))]
@@ -36,14 +43,16 @@ class CycleClass():
     for idx, player in enumerate(self.players):
       self.assigned_players[player] = self.players[pairs[idx]]
   
+  # get current player member object
   def current_player(self):
     return self.players[self.current_player_index]
 
+  # advance to the next player
   def advance(self):
     self.current_player_index = (self.current_player_index + 1) % len(self.players)
   
+  # clean up the game 
   def clean_up(self):
-    # clean up the game 
     for player in self.players:
       players_games.pop(player, None)
 
@@ -67,13 +76,11 @@ class MiniGames(commands.Cog):
     Each player will then take turns to ask for a hint from other players about the anime they was assigned to.
     Who knows the anime first wins!
     """
-
     await ctx.defer()
 
     cycle_object = CycleClass()
-    minigame_objects.append(cycle_object)
 
-    start_view = discord.ui.View(timeout=5, disable_on_timeout=True)
+    start_view = discord.ui.View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
     start_button = discord.ui.Button( label="click to join", style=discord.ButtonStyle.green, emoji="🤓")
 
     async def start_callback(interaction):
@@ -132,13 +139,14 @@ class MiniGames(commands.Cog):
     #   assigned_player = cycle_object.assigned_players[player]
     #   await player.send(
     #     embed=discord.Embed(
-    #       description=f"**{player.mention}**: You need to pick an anime for **{assigned_player.mention}!**",
+    #       description=f"You need to pick an anime for **{assigned_player.mention}!**",
     #       color=discord.Color.purple()
     #     )
     #   )
-    # await ctx.send("Pairing has been sent to every player via DM.")
+    await ctx.send(embed=discord.Embed(description="Pairing has been sent to every player via DM."))
 
     # each players pick an anime for their assigned player using /pick command
+    cycle_object.phase = "picking"
     await ctx.send(
       embed=discord.Embed(
         title="use `/cycle pick <anime_id>` command to pick an anime for your assigned player",
@@ -147,7 +155,7 @@ class MiniGames(commands.Cog):
       )
     )
 
-    timer = 10
+    timer = CycleClass.pick_timeout
     while timer > 0:
       await asyncio.sleep(1)  # ping every 1s
       timer -= 1
@@ -168,12 +176,12 @@ class MiniGames(commands.Cog):
     
 
     # Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
+    cycle_object.phase = "turns"
     while len(cycle_object.done) < len(cycle_object.players):
-      continue_view = discord.ui.View(timeout=10, disable_on_timeout=True)
+      continue_view = discord.ui.View(timeout=CycleClass.turn_timeout, disable_on_timeout=True)
       continue_button = discord.ui.Button(
         label="next", 
         style=discord.ButtonStyle.green, 
-        emoji="▶️",
       )
 
       async def continue_callback(interaction):
@@ -191,7 +199,7 @@ class MiniGames(commands.Cog):
 
       message = await ctx.send(
         embed=discord.Embed(
-          description=f"{current_player.mention}'s turn! Ask for some hints🤔\n If you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+          description=f"{current_player.mention}'s turn! Ask for some hints.\n If you're ready, use `/cycle answer <anime_id>` to submit your answer.",
           color=discord.Color.purple(),
         ),
         view=continue_view
@@ -222,12 +230,16 @@ class MiniGames(commands.Cog):
     cycle_object = players_games.get(member)
 
     if not cycle_object:
-      await ctx.respond(f"{member.mention}: You are not in any anime cycle game.", ephemeral=True)
+      await ctx.respond(f"You are not in any anime cycle game.", ephemeral=True)
+      return
+    
+    if cycle_object.phase != "picking":
+      await ctx.respond(f"The game is not in the picking phase yet!", ephemeral=True)
       return
 
     result = await get_anime_by_id(anime_id)
     if not result:
-      await ctx.respond(f"{member.mention} invalid anime id provided.", ephemeral=True)
+      await ctx.respond(f"Invalid anime id was provided.", ephemeral=True)
       return
     
     title = result.data.title
@@ -254,17 +266,21 @@ class MiniGames(commands.Cog):
     cycle_object = players_games.get(member)
 
     if not cycle_object:
-      await ctx.respond(f"{member.mention}: You are not in any anime cycle game.", ephemeral=True)
+      await ctx.respond(f"You are not in any anime cycle game.", ephemeral=True)
+      return
+
+    if cycle_object.phase != "turns":
+      await ctx.respond(f"The game is not in the turns phase yet!", ephemeral=True)
       return
 
     if member != cycle_object.current_player():
-      await ctx.respond(f"{member.mention}: It's not your turn yet!", ephemeral=True)
+      await ctx.respond(f"It's not your turn yet!", ephemeral=True)
       return
 
 
     result = await get_anime_by_id(anime_id)
     if not result:
-      await ctx.respond(f"{member.mention} invalid anime id provided.", ephemeral=True)
+      await ctx.respond(f"Invalid anime id was provided.", ephemeral=True)
       return
 
     title = result.data.title
