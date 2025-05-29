@@ -1,23 +1,24 @@
 import discord
 from discord.ext import commands
 
-from discord import ApplicationContext, ApplicationCommandError, RawReactionActionEvent
+from discord import ApplicationContext, ApplicationCommandError, RawReactionActionEvent, Bot
 
 
 class Events(commands.Cog):
 
   def __init__(self, bot): 
-    self.bot = bot
+    self.bot: Bot = bot
 
   @commands.Cog.listener()
   async def on_ready(self):
     print(f"We have logged in as {self.bot.user}")
   
-  # Handle reacting 📬 to save an anime
   @commands.Cog.listener()
   async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
+    # Handle reacting 📬 to save a message
     member = payload.member
-    if member is None or member.bot:
+
+    if member.bot:
       return
 
     if payload.emoji.name != "📬":
@@ -47,9 +48,9 @@ class Events(commands.Cog):
       await ctx.respond(f"You're too fast! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
 
     else:
-      await ctx.respond("An error occurred! T-T")
+      await ctx.respond("An error occurred... T-T")
       print("An error occured:", error)
 
 
-def setup(bot):
+def setup(bot: Bot):
   bot.add_cog(Events(bot))

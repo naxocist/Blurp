@@ -32,7 +32,7 @@ adjectives_or_non_verbs = ["angry", "bored", "happy", "smug", "thumbsup", "nope"
 
 
 # Convert a word to an "is" phrase
-def to_is_phrase(word):
+def to_is_phrase(word: str) -> str:
   if word in adjectives_or_non_verbs:
     return f"is {word}"
   inflected = lemminflect.getInflection(word, tag="VBG")

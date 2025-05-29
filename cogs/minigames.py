@@ -10,9 +10,9 @@ import asyncio
 from utils.jikanv4 import get_anime_by_id
 from credentials import guild_ids
 
-# global tmp game info 
-minigame_objects = [] # what game is currently running
-players_games = {} # what game a player belongs to
+# global tmp running game info 
+minigame_objects = [] 
+players_games = {} 
 
 
 class CycleClass():
@@ -21,21 +21,18 @@ class CycleClass():
   pick_timeout = 600
   turn_timeout = 60
 
-  # phases in this game
   phases = ["lobby", "picking", "turns"] 
 
   def __init__(self):
-    # add this cycle object to the global tmp storage
     minigame_objects.append(self) 
 
     self.players: List[Member] = []
     self.assigned_players: dict[Member, Member] = {}
-    self.assigned_animes: dict[Member, DotMap] = {} # { Member: dotmapped compact anime info }
+    self.assigned_animes: dict[Member, DotMap] = {}
     self.current_player_index = 0
     self.current_phase_index = 0 
     self.done: List[Member] = []
   
-  # add a player to the game
   def add_player(self, player):
     self.players.append(player)
     players_games[player] = self # store which game the player is in
@@ -54,23 +51,18 @@ class CycleClass():
     for idx, player in enumerate(self.players):
       self.assigned_players[player] = self.players[pairs[idx]]
   
-  # get current player member object
   def current_player(self):
     return self.players[self.current_player_index]
 
-  # advance to the next player
   def advance(self):
     self.current_player_index = (self.current_player_index + 1) % len(self.players)
   
-  # mark player who answered correctly
   def add_done(self, player: Member):
     self.done.append(player)
   
-  # advance to the next phase
   def advance_phase(self):
     self.current_phase_index += 1
 
-  # return current phase name
   def current_phase(self):
     return CycleClass.phases[self.current_phase_index]
   
@@ -81,7 +73,6 @@ class CycleClass():
       color=discord.Colour.gold()
     )
 
-  # clean up the game 
   def clean_up(self):
     for player in self.players:
       if player in players_games:
@@ -113,30 +104,29 @@ class MiniGames(commands.Cog):
 
     cycle_object = CycleClass()
 
-    start_view = discord.ui.View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
-    start_button = discord.ui.Button( label="click to join", style=discord.ButtonStyle.green, emoji="🤓")
+    invite_view = discord.ui.View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
+    join_button = discord.ui.Button(label="click to join", style=discord.ButtonStyle.primary, emoji="🤓")
 
-    async def start_callback(interaction):
+    async def join_callback(interaction):
       nonlocal cycle_object
 
-      member = interaction.user
+      member: Member = interaction.user
       if member in cycle_object.players:
         await interaction.response.send_message(f"You are already in the game!", ephemeral=True)
         return
 
       cycle_object.add_player(member)
       await interaction.response.send_message(f"{member.mention} joined!")
-      
-    start_button.callback = start_callback
-    start_view.add_item(start_button)
+    
+    join_button.callback = join_callback
+    invite_view.add_item(join_button)
 
     await ctx.respond(
       embed=Embed(title="Anime Cycle has been started!", color=Color.green()), 
-      view=start_view
+      view=invite_view
     )
 
-    # wait for players to join the game
-    await start_view.wait()
+    await invite_view.wait()
 
     # DEMO player
     # cycle_object.add_player(ctx.author)
@@ -212,11 +202,11 @@ class MiniGames(commands.Cog):
     # notify every player about other players' assigned anime
     for player in cycle_object.players:
       info = ""
-      for p in cycle_object.players:
-        if p == player:
+      for plyr in cycle_object.players:
+        if plyr == player:
           continue 
-        assigned_anime = cycle_object.assigned_animes[p]
-        info += f"{p.mention}: [{assigned_anime.title}]({assigned_anime.url})\n"
+        assigned_anime = cycle_object.assigned_animes[plyr]
+        info += f"{plyr.mention}: [{assigned_anime.title}]({assigned_anime.url})\n"
 
       await player.send(embed=Embed(
         title="Information",
@@ -229,8 +219,12 @@ class MiniGames(commands.Cog):
 
     # Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
     cycle_object.advance_phase()
-    cycle_object.phase = "turns"
     while len(cycle_object.done) < len(cycle_object.players):
+      current_player = cycle_object.current_player()
+      if current_player in cycle_object.done:
+        cycle_object.advance()
+        continue
+
       turn_view = discord.ui.View(timeout=CycleClass.turn_timeout, disable_on_timeout=True)
       continue_button = discord.ui.Button(label="next player", style=discord.ButtonStyle.green)
       terminate_button = discord.ui.Button(label="terminate", style=discord.ButtonStyle.red)
@@ -256,11 +250,6 @@ class MiniGames(commands.Cog):
       turn_view.add_item(continue_button)
       turn_view.add_item(terminate_button)
 
-      current_player = cycle_object.current_player()
-      if current_player in cycle_object.done:
-        cycle_object.advance()
-        continue
-
       message = await ctx.send(embed=Embed(
         description=f"{current_player.mention}'s turn! Go ahead and ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
         color=Color.purple(),
@@ -269,6 +258,7 @@ class MiniGames(commands.Cog):
       )
 
       await turn_view.wait()
+
       if turn_view.is_finished():
         cycle_object.advance()
         turn_view.disable_all_items()
@@ -277,7 +267,7 @@ class MiniGames(commands.Cog):
         # Early terminate by a member
         if is_terminate:
           await ctx.send(embed=Embed(
-            description=f"**{terminator.mention} terminated this game...**",
+            description=f"**{terminator.mention} terminated the game...**",
             color=Color.red()
           ))
           cycle_object.clean_up()

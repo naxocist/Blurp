@@ -16,8 +16,8 @@ if __name__ == "__main__":
   for cog in cogs_list:
     try:
       bot.load_extension(f"cogs.{cog}")
-      print(f"Loaded {cog} successfully.")
+      print(f"Loaded {cog}.py successfully.")
     except Exception as e:
-      print(f"Failed to load {cog}: {e}")
+      print(f"Failed to load {cog}.py: {e}")
 
   bot.run(DISCORD_TOKEN)
