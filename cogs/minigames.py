@@ -17,8 +17,8 @@ players_games = {} # what game a player belongs to
 
 class CycleClass():
   # time limit in seconds
-  join_timeout = 2
-  pick_timeout = 60
+  join_timeout = 10
+  pick_timeout = 600
   turn_timeout = 60
 
   # phases in this game
@@ -139,9 +139,9 @@ class MiniGames(commands.Cog):
     await start_view.wait()
 
     # DEMO player
-    cycle_object.add_player(ctx.author)
-    cycle_object.add_player(self.bot.user)
-    cycle_object.assigned_animes[ctx.author] = DotMap(dict(title="TEST", url="TEST.com", mal_id=9337))
+    # cycle_object.add_player(ctx.author)
+    # cycle_object.add_player(self.bot.user)
+    # cycle_object.assigned_animes[ctx.author] = DotMap(dict(title="TEST", url="TEST.com", mal_id=9337))
 
     # too few players to start the game
     if len(cycle_object.players) < 2:
@@ -168,12 +168,12 @@ class MiniGames(commands.Cog):
     cycle_object.random_pairs()
 
     # notify players about their assigned player via DM
-    # for player in cycle_object.players:
-    #   assigned_player = cycle_object.assigned_players[player]
-    #   await player.send(embed=Embed(
-    #     description=f"You need to pick an anime for **{assigned_player.mention}!**",
-    #     color=Color.purple(),
-    #   ))
+    for player in cycle_object.players:
+      assigned_player = cycle_object.assigned_players[player]
+      await player.send(embed=Embed(
+        description=f"You need to pick an anime for **{assigned_player.mention}!**",
+        color=Color.purple(),
+      ))
 
     await ctx.send(embed=Embed(
       title="Pairing has been sent to every player via DM.", 
@@ -210,19 +210,19 @@ class MiniGames(commands.Cog):
       return 
     
     # notify every player about other players' assigned anime
-    # for player in cycle_object.players:
-    #   info = ""
-    #   for p in cycle_object.players:
-    #     if p == player:
-    #       continue 
-    #     assigned_anime = cycle_object.assigned_animes[p]
-    #     info += f"{player.mention}: [{assigned_anime.title}]({assigned_anime.url})\n"
+    for player in cycle_object.players:
+      info = ""
+      for p in cycle_object.players:
+        if p == player:
+          continue 
+        assigned_anime = cycle_object.assigned_animes[p]
+        info += f"{p.mention}: [{assigned_anime.title}]({assigned_anime.url})\n"
 
-    #   player.send(Embed(
-    #     title="Information",
-    #     description=info,
-    #     colour=Color.blurple()
-    #   ))
+      await player.send(embed=Embed(
+        title="Information",
+        description=info,
+        colour=Color.blurple()
+      ))
 
     # 5 seconds delay
     await asyncio.sleep(5)

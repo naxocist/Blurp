@@ -16,7 +16,7 @@ cls && set IS_DEV="True" && uv run .\main.py
 """
 IS_DEV = os.getenv("IS_DEV", "False") == "True"
 
-guild_ids = [NAXOCIST_GUILD_ID] if IS_DEV else None
+guild_ids = [NAXOCIST_GUILD_ID, PINONT_HOME_GUILD_ID] if IS_DEV else None
 
 if(IS_DEV):
   print("Running in development mode with guilds:", ", ".join(guild_ids))
