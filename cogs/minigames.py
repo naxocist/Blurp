@@ -27,11 +27,12 @@ class CycleClass():
     minigame_objects.append(self) 
 
     self.players: List[Member] = []
-    self.assigned_players: dict[Member, Member] = {}
-    self.assigned_animes: dict[Member, DotMap] = {}
-    self.current_player_index = 0
-    self.current_phase_index = 0 
-    self.done: List[Member] = []
+    self.targets: dict[Member, Member] = {}
+    self.player_animes: dict[Member, DotMap] = {}
+    self.round = 0;
+    self.active_player_index = 0
+    self.phase_index = 0 
+    self.finished_players: List[Member] = []
   
   def add_player(self, player):
     self.players.append(player)
@@ -49,27 +50,29 @@ class CycleClass():
         break
     
     for idx, player in enumerate(self.players):
-      self.assigned_players[player] = self.players[pairs[idx]]
+      self.targets[player] = self.players[pairs[idx]]
   
   def current_player(self):
-    return self.players[self.current_player_index]
+    return self.players[self.active_player_index]
 
   def advance(self):
-    self.current_player_index = (self.current_player_index + 1) % len(self.players)
+    if self.active_player_index == 0: 
+      self.round += 1
+    self.active_player_index = (self.active_player_index + 1) % len(self.players)
   
   def add_done(self, player: Member):
-    self.done.append(player)
+    self.finished_players.append(player)
   
   def advance_phase(self):
-    self.current_phase_index += 1
+    self.phase_index += 1
 
   def current_phase(self):
-    return CycleClass.phases[self.current_phase_index]
+    return CycleClass.phases[self.phase_index]
   
   def leaderboard(self) -> Embed:
     return Embed(
       title="Leaderboard",
-      description="\n".join([f"#{rank}: {player.mention}" for rank, player in enumerate(self.done, start=1)]),
+      description="\n".join([f"#{rank}: {player.mention}" for rank, player in enumerate(self.finished_players, start=1)]),
       color=discord.Colour.gold()
     )
 
@@ -159,9 +162,9 @@ class MiniGames(commands.Cog):
 
     # notify players about their assigned player via DM
     for player in cycle_object.players:
-      assigned_player = cycle_object.assigned_players[player]
+      target = cycle_object.targets[player]
       await player.send(embed=Embed(
-        description=f"You need to pick an anime for **{assigned_player.mention}!**",
+        description=f"You need to pick an anime for **{target.mention}!**",
         color=Color.purple(),
       ))
 
@@ -184,11 +187,11 @@ class MiniGames(commands.Cog):
     while timer > 0:
       await asyncio.sleep(1) # ping every 1s
       timer -= 1
-      if len(cycle_object.assigned_animes) == len(cycle_object.players):
+      if len(cycle_object.player_animes) == len(cycle_object.players):
         break
 
     # someone didn't pick an anime in time
-    if len(cycle_object.assigned_animes) < len(cycle_object.players):
+    if len(cycle_object.player_animes) < len(cycle_object.players):
       await ctx.send(
         embed=Embed(
           title="Anime Cycle game cancelled",
@@ -205,7 +208,7 @@ class MiniGames(commands.Cog):
       for plyr in cycle_object.players:
         if plyr == player:
           continue 
-        assigned_anime = cycle_object.assigned_animes[plyr]
+        assigned_anime = cycle_object.player_animes[plyr]
         info += f"{plyr.mention}: [{assigned_anime.title}]({assigned_anime.url})\n"
 
       await player.send(embed=Embed(
@@ -219,9 +222,9 @@ class MiniGames(commands.Cog):
 
     # Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
     cycle_object.advance_phase()
-    while len(cycle_object.done) < len(cycle_object.players):
+    while len(cycle_object.finished_players) < len(cycle_object.players):
       current_player = cycle_object.current_player()
-      if current_player in cycle_object.done:
+      if current_player in cycle_object.finished_players:
         cycle_object.advance()
         continue
 
@@ -251,6 +254,7 @@ class MiniGames(commands.Cog):
       turn_view.add_item(terminate_button)
 
       message = await ctx.send(embed=Embed(
+        title=f"Round :{cycle_object.round}",
         description=f"{current_player.mention}'s turn! Go ahead and ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
         color=Color.purple(),
       ),
@@ -301,14 +305,14 @@ class MiniGames(commands.Cog):
     
     title, url, mal_id= result.data.title, result.data.url, result.data.mal_id
 
-    assigned_player: Member = cycle_object.assigned_players[member] # get member object of assigned player
+    target: Member = cycle_object.targets[member] # get member object of assigned player
 
     # assigned that player a dotmapped compact anime info
-    cycle_object.assigned_animes[assigned_player] = DotMap(dict(title=title, url=url, mal_id=mal_id))
+    cycle_object.player_animes[target] = DotMap(dict(title=title, url=url, mal_id=mal_id))
 
-    await ctx.respond(f"You picked [{title}]({url}) for {assigned_player.mention}!", ephemeral=True)
+    await ctx.respond(f"You picked [{title}]({url}) for {target.mention}!", ephemeral=True)
 
-    req: int = len(cycle_object.assigned_animes) - len(cycle_object.players)
+    req: int = len(cycle_object.player_animes) - len(cycle_object.players)
     if req > 0: 
       await ctx.send(embed=Embed(description=f"There are {req} players who still need to pick an anime.", color=Color.yellow()))
     
@@ -341,17 +345,19 @@ class MiniGames(commands.Cog):
 
     title, url, mal_id = result.data.title, result.data.url, result.data.mal_id
 
-    assigned_anime: DotMap = cycle_object.assigned_animes[member] # retrieve player's assigned anime
+    target: DotMap = cycle_object.player_animes[member] # retrieve player's assigned anime
 
     guessed = f"{member.mention} guessed [{title}]({url})\n" 
-    if assigned_anime.mal_id == mal_id:
+    embed = None
+    if target.mal_id == mal_id:
       guessed += "Correct!"
       cycle_object.add_done(member)
+      embed=cycle_object.leaderboard()
     else:
       guessed += "Not quite right... Try again!"
 
+    await ctx.respond(guessed, embed)
     
-    await ctx.respond(guessed, embed=cycle_object.leaderboard())
 
 
 def setup(bot):
