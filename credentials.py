@@ -9,10 +9,10 @@ PINONT_HOME_GUILD_ID = os.getenv("PINONT_HOME_GUILD_ID")
 
 r"""
 powershell run dev command:
-  cls; $env:IS_DEV="True"; uv run .\main.py
+cls; $env:IS_DEV="True"; uv run .\main.py
 
 cmd run dev command:
-  cls && set IS_DEV="True" && uv run .\main.py
+cls && set IS_DEV="True" && uv run .\main.py
 """
 IS_DEV = os.getenv("IS_DEV", "False") == "True"
 

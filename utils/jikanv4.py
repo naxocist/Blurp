@@ -23,7 +23,11 @@ async def get_anime_by_id(anime_id):
   """
   Fetches an anime by its ID from Jikan API and convert it to DotMap object.
   """
-  async with limiter:
-    loop = asyncio.get_running_loop()
-    data = await loop.run_in_executor(None, jikan.anime, anime_id)
-    return DotMap(data)
+
+  try:
+    async with limiter:
+      loop = asyncio.get_running_loop()
+      data = await loop.run_in_executor(None, jikan.anime, anime_id)
+      return DotMap(data)
+  except Exception:
+    return None

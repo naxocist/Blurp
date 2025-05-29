@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 
+from discord import ApplicationContext, ApplicationCommandError, RawReactionActionEvent
+
 
 class Events(commands.Cog):
 
@@ -13,7 +15,7 @@ class Events(commands.Cog):
   
   # Handle reacting 📬 to save an anime
   @commands.Cog.listener()
-  async def on_raw_reaction_add(self, payload):
+  async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
     member = payload.member
     if member is None or member.bot:
       return
@@ -34,7 +36,7 @@ class Events(commands.Cog):
       pass
 
   @commands.Cog.listener()
-  async def on_application_command_error(self, ctx, error):
+  async def on_application_command_error(self, ctx: ApplicationContext, error: ApplicationCommandError):
     if isinstance(error, commands.MissingRequiredArgument):
       await ctx.respond("Missing required argument. Please check your command usage.")
 
@@ -45,6 +47,7 @@ class Events(commands.Cog):
       await ctx.respond(f"You're too fast! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
 
     else:
+      await ctx.respond("An error occurred! T-T")
       print("An error occured:", error)
 
 

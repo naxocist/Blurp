@@ -26,7 +26,7 @@ expressions = [
   "stare", "think", "thumbsup", "wave", "wink", "yawn"
 ]
 
-print(len(actions_to_others) + len(expressions))
+print(f"There are total of {len(actions_to_others) + len(expressions)} nekosbest actions")
 
 adjectives_or_non_verbs = ["angry", "bored", "happy", "smug", "thumbsup", "nope"]
 

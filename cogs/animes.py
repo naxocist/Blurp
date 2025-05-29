@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+from discord import Member, Color
+
 from utils.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
 from utils.jikanv4 import get_random_anime
 
@@ -16,17 +18,17 @@ class Animes(commands.Cog):
     image = await get_img(action)
     is_phrase_action = to_is_phrase(action)
     embed = discord.Embed(
-      color=discord.Color.random(),
+      color=Color.random(),
       image=image.url
     )
     await ctx.respond(f"{ctx.author.mention} {is_phrase_action}!", embed=embed)
 
   # allow members to use action on other members
   @commands.slash_command(guild_ids=guild_ids, description="Perform an action to another user") 
-  async def action(self, ctx, member: discord.Member, action: str = discord.Option(str, "What action do you want to perform?", choices=actions_to_others)):
+  async def action(self, ctx, member: Member, action: str = discord.Option(str, "What action do you want to perform?", choices=actions_to_others)):
     image = await get_img(action)
     embed = discord.Embed(
-      color=discord.Color.random(),
+      color=Color.random(),
       image=image.url
     )
 
@@ -47,7 +49,7 @@ class Animes(commands.Cog):
       title=f"Here is your {choice}!",
       description=f"Artist: **[{artist}]({artist_href})**\nVisit **[source]({source_url})!**",
       image=image,
-      color=discord.Color.random()
+      color=Color.random()
     )
     await ctx.respond(embed=embed)
 
@@ -73,7 +75,7 @@ class Animes(commands.Cog):
       title=title,
       url=url,
       image=image,
-      color=discord.Color.random()
+      color=Color.random()
     )
     embed.add_field(name="Genres", value=genres, inline=False)
     embed.add_field(name="Season", value=f"`{season.capitalize() + " " + str(year) if season and year else "N/A"}`", inline=True)
