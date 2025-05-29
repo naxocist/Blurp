@@ -10,6 +10,7 @@ class Animes(commands.Cog):
   def __init__(self, bot): 
     self.bot = bot
   
+  # allow members to express an expression
   @commands.slash_command(guild_ids=guild_ids, description="Show your expression")
   async def expression(self, ctx, action: str = discord.Option(str, "What expression do you want to show?", choices=expressions)):
     image = await get_img(action)
@@ -20,6 +21,7 @@ class Animes(commands.Cog):
     )
     await ctx.respond(f"{ctx.author.mention} {is_phrase_action}!", embed=embed)
 
+  # allow members to use action on other members
   @commands.slash_command(guild_ids=guild_ids, description="Perform an action to another user") 
   async def action(self, ctx, member: discord.Member, action: str = discord.Option(str, "What action do you want to perform?", choices=actions_to_others)):
     image = await get_img(action)
@@ -31,6 +33,7 @@ class Animes(commands.Cog):
     if action == "dance": action += " with"
     await ctx.respond(f"{ctx.author.mention} wants to {action} {member.mention}!", embed=embed)
 
+  # get a random 2D illustration
   @commands.slash_command(guild_ids=guild_ids, description="Get a random anime illustration")
   async def art(self, ctx, choice: str = discord.Option(str, "Choose your type", choices=["husbando", "kitsune", "neko", "waifu"])):
     result = await get_img(choice)
@@ -48,11 +51,11 @@ class Animes(commands.Cog):
     )
     await ctx.respond(embed=embed)
 
+  # get a random anime base on https://myanimelist.net/
   @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
-  # @commands.cooldown(1, 5, commands.BucketType.user)  # Limit to 1 use every 5 seconds
   async def anime(self, ctx):
     await ctx.defer()
-    random_anime = await get_random_anime() # return DotMap object
+    random_anime = await get_random_anime() # recieve DotMap object
     data = random_anime.data
 
     title = data.title

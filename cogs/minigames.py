@@ -34,6 +34,7 @@ class CycleClass():
   def random_pairs(self):
     random.shuffle(self.players)
     pairs = [i for i in range(len(self.players))]
+
     # Expected time complexity: ~ O(n)*e
     while True:
       random.shuffle(pairs)
@@ -50,6 +51,10 @@ class CycleClass():
   # advance to the next player
   def advance(self):
     self.current_player_index = (self.current_player_index + 1) % len(self.players)
+  
+  # mark player who answered correctly
+  def done(self, player):
+    self.done.append(player)
   
   # clean up the game 
   def clean_up(self):
@@ -221,6 +226,7 @@ class MiniGames(commands.Cog):
 
     cycle_object.clean_up()
   
+  # This command should be used in "picking" phase
   @cycle.command(description="Pick an anime for your assigned player")
   async def pick(self, ctx, anime_id: int):
     """
@@ -256,6 +262,7 @@ class MiniGames(commands.Cog):
       await ctx.send(embed=discord.Embed(description=f"There are {req} players who still need to pick an anime.", color=discord.Color.yellow()))
     
   
+  # This command should be used in "turns" phase
   @cycle.command(description="Submit your answer here!")
   async def answer(self, ctx, anime_id: int):
     """
@@ -290,7 +297,7 @@ class MiniGames(commands.Cog):
     assigned_mal_id = cycle_object.assigned_mal_ids[member]
     if assigned_mal_id == mal_id:
       await ctx.respond(f"{member.mention} guessed it right! {member.mention}'s assigned anime is [{title}]({url})")
-      cycle_object.done.append(member)
+      cycle_object.done(member)
       return
 
     await ctx.respond(f"{member.mention} Wrong answer! Try again...", ephemeral=True)

@@ -45,7 +45,7 @@ class Events(commands.Cog):
       await ctx.respond(f"You're too fast! Try again in {error.retry_after:.2f} seconds.", ephemeral=True)
 
     else:
-      await ctx.respond(f"An error occurred: {error}")
+      print("An error occured:", error)
 
 
 def setup(bot):

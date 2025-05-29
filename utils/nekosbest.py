@@ -26,6 +26,8 @@ expressions = [
   "stare", "think", "thumbsup", "wave", "wink", "yawn"
 ]
 
+print(len(actions_to_others) + len(expressions))
+
 adjectives_or_non_verbs = ["angry", "bored", "happy", "smug", "thumbsup", "nope"]
 
 
@@ -34,6 +36,7 @@ def to_is_phrase(word):
   if word in adjectives_or_non_verbs:
     return f"is {word}"
   inflected = lemminflect.getInflection(word, tag="VBG")
+
   if inflected:
     return f"is {inflected[0]}"
   return f"is {word}ing" 
