@@ -215,17 +215,17 @@ class MiniGames(commands.Cog):
         while timeout > 0 and not turn_view.is_finished():
           await asyncio.sleep(1)
           timeout -= 1
-          try:
-            await turn_msg.edit(
-              embed=Embed(
-                title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
-                description=f"{current_player.mention}'s turn! Ask for hints.\nUse `/cycle answer <anime_id>` to submit.",
-                color=Color.purple(),
-              ),
-              view=turn_view
-            )
-          except discord.NotFound:
-            break  # Message was deleted early
+          # try:
+          await turn_msg.edit(
+            embed=Embed(
+              title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
+              description=f"{current_player.mention}'s turn! Ask for hints.\nUse `/cycle answer <anime_id>` to submit.",
+              color=Color.purple(),
+            ),
+            view=turn_view
+          )
+          # except discord.NotFound:
+          #   break  # Message was deleted early
         
 
       countdown_task = asyncio.create_task(countdown())
@@ -272,7 +272,7 @@ class MiniGames(commands.Cog):
       await ctx.respond(f"Invalid anime id was provided.", ephemeral=True)
       return
     
-    title, url, mal_id, image = result.data.title, result.data.url, result.data.mal_id, result.data.images.jpg.image_url
+    title, url, mal_id, image_url = result.data.title, result.data.url, result.data.mal_id, result.data.images.jpg.image_url
 
     target: Member = cycle_object.targets[member] # get member object of assigned player
 
@@ -281,7 +281,7 @@ class MiniGames(commands.Cog):
 
     pick_embed = Embed(
       description=f"You picked **[{title}]({url})** for {target.mention}!",
-      image=image,
+      image=image_url,
       color=Color.nitro_pink()
     )
     await ctx.respond(embed=pick_embed, ephemeral=True)
@@ -317,20 +317,16 @@ class MiniGames(commands.Cog):
       await ctx.respond(f"Invalid anime id was provided.", ephemeral=True)
       return
 
-    title, url, mal_id = result.data.title, result.data.url, result.data.mal_id
+    title, url, mal_id, image_url = result.data.title, result.data.url, result.data.mal_id, result.data.images.jpg.image_url
 
     target: DotMap = cycle_object.player_animes[member] # retrieve player's assigned anime
 
-    guessed = f"{member.mention} guessed [{title}]({url})\n" 
-    embed = None
-    if target.mal_id == mal_id:
-      guessed += "Correct!"
-      cycle_object.add_done(member)
-      embed=cycle_object.leaderboard()
-    else:
-      guessed += "Not quite right... Try again!"
+    correct = target.mal_id == mal_id
+    guessed = f"{member.mention} guessed [{title}]({url})\n"
+    guessed += "Correct! 😱" if correct else "Not quite right... Try again! 🥹"
+    embed = Embed(description=guessed, image=image_url, color=Color.brand_green() if correct else Color.brand_red())
 
-    await ctx.respond(guessed, embed)
+    await ctx.respond(embed=embed)
     
 
 
