@@ -253,7 +253,6 @@ class MiniGames(commands.Cog):
     This command should be used in "picking" phase
     Pick an anime for assigned player using MAL anime id.
     """
-    await ctx.defer()
     member: Member = ctx.author
     cycle_object: CycleClass = players_games.get(member)
 
@@ -294,7 +293,6 @@ class MiniGames(commands.Cog):
     This command should be used in "turns" phase
     Member will use this command to submit their answer
     """
-    await ctx.defer()
     member: Member = ctx.author
     cycle_object: CycleClass = players_games.get(member)
 
