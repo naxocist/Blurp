@@ -4,6 +4,7 @@ from dotmap import DotMap
 import discord
 from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Interaction
+from discord.ui import View, Button
 
 import random
 import asyncio
@@ -29,19 +30,22 @@ class CycleClass():
     self.players: List[Member] = []
     self.targets: dict[Member, Member] = {}
     self.player_animes: dict[Member, DotMap] = {}
-    self.round = 0;
+    self.player_count = 0
+
     self.active_player_index = 0
     self.phase_index = 0 
-    self.finished_players: List[Member] = []
+    self.round = 0
+    self.done_players: List[Member] = []
   
   def add_player(self, player):
+    self.player_count += 1
     self.players.append(player)
     players_games[player] = self # store which game the player is in
 
   # shuffle and find derangements of players, then assigned players to each other
   def random_pairs(self):
     random.shuffle(self.players)
-    pairs = [i for i in range(len(self.players))]
+    pairs = [i for i in range(self.player_count)]
 
     # Expected time complexity: ~ O(n)*e
     while True:
@@ -55,13 +59,13 @@ class CycleClass():
   def current_player(self):
     return self.players[self.active_player_index]
 
-  def advance(self):
+  def advance_player(self):
     if self.active_player_index == 0: 
       self.round += 1
-    self.active_player_index = (self.active_player_index + 1) % len(self.players)
+    self.active_player_index = (self.active_player_index + 1) % self.player_count
   
   def add_done(self, player: Member):
-    self.finished_players.append(player)
+    self.done_players.append(player)
   
   def advance_phase(self):
     self.phase_index += 1
@@ -72,7 +76,7 @@ class CycleClass():
   def leaderboard(self) -> Embed:
     return Embed(
       title="Leaderboard",
-      description="\n".join([f"#{rank}: {player.mention}" for rank, player in enumerate(self.finished_players, start=1)]),
+      description="\n".join([f"**#{rank}**: {player.mention}" for rank, player in enumerate(self.done_players, start=1)]),
       color=discord.Colour.gold()
     )
 
@@ -82,8 +86,7 @@ class CycleClass():
         players_games.pop(player, None)
 
     if self in minigame_objects:
-      if self in minigame_objects:
-        minigame_objects.remove(self)
+      minigame_objects.remove(self)
     
 
 class MiniGames(commands.Cog):
@@ -107,10 +110,11 @@ class MiniGames(commands.Cog):
 
     cycle_object = CycleClass()
 
-    invite_view = discord.ui.View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
-    join_button = discord.ui.Button(label="click to join", style=discord.ButtonStyle.primary, emoji="🤓")
+    invite_view = View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
+    join_button = Button(label="click to join", style=discord.ButtonStyle.primary, emoji="🤓")
+    start_button = Button(label="click to start", style=discord.ButtonStyle.green, emoji="💀")
 
-    async def join_callback(interaction):
+    async def join_callback(interaction: Interaction):
       nonlocal cycle_object
 
       member: Member = interaction.user
@@ -121,8 +125,15 @@ class MiniGames(commands.Cog):
       cycle_object.add_player(member)
       await interaction.response.send_message(f"{member.mention} joined!")
     
+    async def start_callback(interaction: Interaction):
+      invite_view.stop()
+      invite_view.disable_all_items()
+      await interaction.response.edit_message(view=invite_view)
+    
     join_button.callback = join_callback
+    start_button.callback = start_callback
     invite_view.add_item(join_button)
+    invite_view.add_item(start_button)
 
     await ctx.respond(
       embed=Embed(title="Anime Cycle has been started!", color=Color.green()), 
@@ -137,13 +148,13 @@ class MiniGames(commands.Cog):
     # cycle_object.assigned_animes[ctx.author] = DotMap(dict(title="TEST", url="TEST.com", mal_id=9337))
 
     # too few players to start the game
-    if len(cycle_object.players) < 2:
+    if cycle_object.player_count < 2:
       await ctx.send(
         embed=Embed(
           title="Anime Cycle game cancelled",
           description="Too few players to start the game.",
           color=Color.red()
-        )
+        ),
       )
       cycle_object.clean_up()
       return
@@ -151,7 +162,7 @@ class MiniGames(commands.Cog):
     # LOBBY
     await ctx.send(
       embed=Embed(
-        title=f"Lobby: {len(cycle_object.players)} players",
+        title=f"Lobby: {cycle_object.player_count} players",
         description=', '.join([player.mention for player in cycle_object.players]),
         color=Color.blue()
       )
@@ -187,11 +198,11 @@ class MiniGames(commands.Cog):
     while timer > 0:
       await asyncio.sleep(1) # ping every 1s
       timer -= 1
-      if len(cycle_object.player_animes) == len(cycle_object.players):
+      if len(cycle_object.player_animes) == cycle_object.player_count:
         break
 
     # someone didn't pick an anime in time
-    if len(cycle_object.player_animes) < len(cycle_object.players):
+    if len(cycle_object.player_animes) < cycle_object.player_count:
       await ctx.send(
         embed=Embed(
           title="Anime Cycle game cancelled",
@@ -222,15 +233,16 @@ class MiniGames(commands.Cog):
 
     # Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
     cycle_object.advance_phase()
-    while len(cycle_object.finished_players) < len(cycle_object.players):
+    while len(cycle_object.done_players) < cycle_object.player_count:
       current_player = cycle_object.current_player()
-      if current_player in cycle_object.finished_players:
-        cycle_object.advance()
+
+      if current_player in cycle_object.done_players:
+        cycle_object.advance_player()
         continue
 
-      turn_view = discord.ui.View(timeout=CycleClass.turn_timeout, disable_on_timeout=True)
-      continue_button = discord.ui.Button(label="next player", style=discord.ButtonStyle.green)
-      terminate_button = discord.ui.Button(label="terminate", style=discord.ButtonStyle.red)
+      turn_view = View(timeout=CycleClass.turn_timeout, disable_on_timeout=True)
+      continue_button = Button(label="next player", style=discord.ButtonStyle.green)
+      terminate_button = Button(label="terminate", style=discord.ButtonStyle.red)
 
       is_terminate = False
       terminator: Member = None
@@ -264,7 +276,7 @@ class MiniGames(commands.Cog):
       await turn_view.wait()
 
       if turn_view.is_finished():
-        cycle_object.advance()
+        cycle_object.advance_player()
         turn_view.disable_all_items()
         await message.edit(view=turn_view)
 
@@ -278,7 +290,7 @@ class MiniGames(commands.Cog):
           return 
 
     
-    await ctx.send("Anime Cycle Ended!", embed=cycle_object.leaderboard())
+    await ctx.send("Anime Cycle Ended!")
     cycle_object.clean_up()
   
   # This command should be used in "picking" phase
@@ -312,7 +324,7 @@ class MiniGames(commands.Cog):
 
     await ctx.respond(f"You picked [{title}]({url}) for {target.mention}!", ephemeral=True)
 
-    req: int = len(cycle_object.player_animes) - len(cycle_object.players)
+    req: int = len(cycle_object.player_animes) - cycle_object.player_count
     if req > 0: 
       await ctx.send(embed=Embed(description=f"There are {req} players who still need to pick an anime.", color=Color.yellow()))
     

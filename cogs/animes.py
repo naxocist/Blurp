@@ -1,7 +1,6 @@
 import discord
 from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Bot
-from dotmap import DotMap
 
 from utils.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
 from utils.jikanv4 import get_random_anime
