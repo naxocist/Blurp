@@ -37,7 +37,7 @@ class CycleClass():
   # time limit in seconds
   join_timeout = 10
   pick_timeout = 60
-  turn_timeout = 60
+  turn_timeout = 10
 
   phases = ["lobby", "picking", "turns"] 
 

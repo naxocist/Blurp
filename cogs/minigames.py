@@ -134,11 +134,11 @@ class MiniGames(commands.Cog):
         if plyr == player:
           continue 
         assigned_anime = cycle_object.player_animes[plyr]
-        info += f"{plyr.mention}: [{assigned_anime.title}]({assigned_anime.url})\n"
+        info += f"{plyr.mention} ❮❮ [{assigned_anime.title}]({assigned_anime.url})\n"
 
       if player.bot: continue 
       await player.send(embed=Embed(
-        title="Assigned anime information",
+        title="Information",
         description=info,
         colour=Color.blurple()
       ))
@@ -178,14 +178,15 @@ class MiniGames(commands.Cog):
       return turn_view
       
 
+    turn_view = new_turn_view()
     # Initial turn setup
     turn_msg = await ctx.send(
       embed=Embed(
-        title=f"Round: {cycle_object.round} | Time Left: {cycle_object.turn_timeout}",
+        title=f"Round: {cycle_object.round} | Time Left: {cycle_object.turn_timeout} seconds",
         description=f"{cycle_object.current_player().mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
         color=Color.purple(),
       ),
-      view=new_turn_view()
+      view=turn_view
     )
 
     leaderboard = await ctx.send(embed=cycle_object.leaderboard())
@@ -200,48 +201,37 @@ class MiniGames(commands.Cog):
         continue
     
       turn_view = new_turn_view()
-      await turn_msg.edit(
-        embed=Embed(
-          title=f"Round: {cycle_object.round} | Time Left: {cycle_object.turn_timeout}",
-          description=f"{current_player.mention}'s turn! Ask for hints.\nUse `/cycle answer <anime_id>` to submit.",
-          color=Color.purple(),
-        ),
-        view=turn_view
-      )
 
-      # Define a concurrent task for timer countdown
+      # Define a concurrent task for timer countdown (along with discord.ui.View timeout)
       async def countdown():
         timeout = cycle_object.turn_timeout
         while timeout > 0 and not turn_view.is_finished():
           await asyncio.sleep(1)
           timeout -= 1
 
-          try:
-            await turn_msg.edit(
-              embed=Embed(
-                title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
-                description=f"{current_player.mention}'s turn! Ask for hints.\nUse `/cycle answer <anime_id>` to submit.",
-                color=Color.purple(),
-              ),
-              view=turn_view
-            )
-          except discord.errors.NotFound:
-            # trigger if user pressed terminate (delete turn_msg)
-            pass
+          await turn_msg.edit(
+            embed=Embed(
+              title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
+              description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+            ),
+            view=turn_view
+          )
+
+        turn_view.stop()
 
       countdown_task = asyncio.create_task(countdown())
-      countdown_task.add_done_callback(lambda future: turn_view.stop())
 
       await turn_view.wait()
-      countdown_task.cancel()
+      if countdown_task.cancel():
+        turn_view.stop()
 
       # Early terminate by a member
       if is_terminate:
+        await turn_msg.delete()
         await ctx.send(embed=Embed(
           description=f"**{terminator.mention} terminated the game...**",
           color=Color.red()
         ))
-        await turn_msg.delete()
         cycle_object.clean_up()
         return 
 
