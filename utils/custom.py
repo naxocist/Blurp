@@ -46,6 +46,7 @@ class CycleClass():
 
     self.players: List[Member] = []
     self.targets: dict[Member, Member] = {}
+    self.given_by: dict[Member, Member] = {}
     self.player_animes: dict[Member, DotMap] = {}
     self.player_count = 0
 
@@ -72,6 +73,7 @@ class CycleClass():
     
     for idx, player in enumerate(self.players):
       self.targets[player] = self.players[pairs[idx]]
+      self.given_by[self.players[pairs[idx]]] = player
   
   def current_player(self) -> Member:
     return self.players[self.active_player_index]
@@ -93,11 +95,16 @@ class CycleClass():
     return CycleClass.phases[self.phase_index]
   
   def leaderboard(self) -> Embed:
-    description = "\n".join([f"**#{rank}**: {player.mention} ❮❮ {self.player_animes[player]}" for rank, player in enumerate(self.done_players, start=1)])
+    description = ""
+    for rank, player in enumerate(self.done_players, start=1):
+      anime = self.player_animes[player]
+      giver = self.given_by[player]
+      description += f"**#{rank}**: {player.mention} ❮❮ [{anime.title}]({anime.url}) ❮❮ {giver.mention}" 
+
     if not description: 
       description = "No one's here..."
     return Embed(
-      title="Leaderboard",
+      title=".⋅˚₊‧ 🜲Leaderboard ‧₊˚ ⋅",
       description=description,
       color=Color.gold()
     )

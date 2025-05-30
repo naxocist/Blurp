@@ -69,7 +69,7 @@ class MiniGames(commands.Cog):
     # DEMO player
     cycle_object.add_player(ctx.author)
     cycle_object.add_player(self.bot.user)
-    cycle_object.player_animes[ctx.author] = DotMap(dict(title="TEST", url="TEST.com", mal_id=9337))
+    cycle_object.player_animes[ctx.author] = DotMap(dict(title="Aharen-san wa Hakarenai Season 2", url="https://myanimelist.net/anime/59466/Aharen-san_wa_Hakarenai_Season_2", mal_id=59466))
 
     # too few players to start the game
     if cycle_object.player_count < 2:
@@ -215,18 +215,19 @@ class MiniGames(commands.Cog):
         while timeout > 0 and not turn_view.is_finished():
           await asyncio.sleep(1)
           timeout -= 1
-          # try:
-          await turn_msg.edit(
-            embed=Embed(
-              title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
-              description=f"{current_player.mention}'s turn! Ask for hints.\nUse `/cycle answer <anime_id>` to submit.",
-              color=Color.purple(),
-            ),
-            view=turn_view
-          )
-          # except discord.NotFound:
-          #   break  # Message was deleted early
-        
+
+          try:
+            await turn_msg.edit(
+              embed=Embed(
+                title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
+                description=f"{current_player.mention}'s turn! Ask for hints.\nUse `/cycle answer <anime_id>` to submit.",
+                color=Color.purple(),
+              ),
+              view=turn_view
+            )
+          except discord.errors.NotFound:
+            # trigger if user pressed terminate (delete turn_msg)
+            pass
 
       countdown_task = asyncio.create_task(countdown())
       countdown_task.add_done_callback(lambda future: turn_view.stop())
@@ -323,9 +324,17 @@ class MiniGames(commands.Cog):
 
     correct = target.mal_id == mal_id
     guessed = f"{member.mention} guessed [{title}]({url})\n"
-    guessed += "**Correct!** 😱" if correct else "**Not quite right... Try again!** 🥹"
-    embed = Embed(description=guessed, image=image_url, color=Color.brand_green() if correct else Color.brand_red())
+    embed = Embed(image=image_url)
 
+    if correct:
+      guessed += "**Correct!** 🤓"
+      embed.color = Color.brand_green()
+      cycle_object.add_done(member)
+    else:
+      guessed += "**Not quite right... Try again!** 🥹"
+      embed.color = Color.brand_red()
+
+    embed.description = guessed
     answer_msg = await ctx.respond(embed=embed)
     msg = await answer_msg.original_response()
     await msg.delete(delay=5)
