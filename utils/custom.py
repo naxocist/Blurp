@@ -37,6 +37,7 @@ class CycleClass():
   # time limit in seconds
   join_timeout = 10
   pick_timeout = 60
+  delay_after_pick = 2
   turn_timeout = 10
 
   phases = ["lobby", "picking", "turns"] 
@@ -50,7 +51,7 @@ class CycleClass():
     self.player_animes: dict[Member, DotMap] = {}
     self.player_count = 0
 
-    self.just_answered = False
+    self.just_answered = 0 # 0: not yet answered, 1: answered (wrong), 2: answered (right)
     self.active_player_index = 0
     self.phase_index = 0 
     self.round = 1
@@ -100,7 +101,7 @@ class CycleClass():
     for rank, player in enumerate(self.done_players, start=1):
       anime = self.player_animes[player]
       giver = self.given_by[player]
-      description += f"**#{rank}**: {player.mention} ❮❮ [{anime.title}]({anime.url}) ❮❮ {giver.mention}" 
+      description += f"**#{rank}**: {player.mention}\n[{anime.title}]({anime.url}) ❮❮ {giver.mention}\n" 
 
     if not description: 
       description = "No one's here..."

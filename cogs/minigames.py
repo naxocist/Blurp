@@ -97,7 +97,7 @@ class MiniGames(commands.Cog):
       title="Lobby", 
       description=players_list,
       thumbnail=(await get_img("thumbsup")).url,
-      color=Color.brand_green()).add_field(name="Pairing result", value=pairs_info)
+      color=Color.brand_green()).add_field(name="Pairing", value=pairs_info)
     )
 
     # PICKING: each players pick an anime for their target using /pick command
@@ -143,17 +143,20 @@ class MiniGames(commands.Cog):
         colour=Color.blurple()
       ))
 
-    # 10 seconds delay
-    await count_down_timer(ctx, 10, title_prefix="Game Start In:")
+    # after pick delay, let players look at the sent info
+    await count_down_timer(ctx, cycle_object.delay_after_pick, title_prefix="Game Start In:")
 
     is_terminate = False
     terminator: Member = None
 
     # Turn View template
-    def new_turn_view() -> View:
+    def new_turn_view(is_last_player) -> View:
       nonlocal is_terminate, terminator
       turn_view = View(timeout=cycle_object.turn_timeout, disable_on_timeout=True)
-      continue_button = Button(label="next player", style=discord.ButtonStyle.green)
+      if is_last_player:
+        turn_view = View()
+
+      continue_button = Button(label="next player", style=discord.ButtonStyle.green, disabled=is_last_player)
       terminate_button = Button(label="terminate", style=discord.ButtonStyle.red)
 
       is_terminate = False
@@ -178,7 +181,7 @@ class MiniGames(commands.Cog):
       return turn_view
       
 
-    turn_view = new_turn_view()
+    turn_view = new_turn_view(is_last_player=False)
     # Initial turn setup
     turn_msg = await ctx.send(
       embed=Embed(
@@ -194,13 +197,15 @@ class MiniGames(commands.Cog):
     # Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
     cycle_object.advance_phase()
     while len(cycle_object.done_players) < cycle_object.player_count:
+      player_left = cycle_object.player_count - len(cycle_object.done_players)
       current_player = cycle_object.current_player()
 
       if current_player in cycle_object.done_players:
         cycle_object.advance_player()
         continue
-    
-      turn_view = new_turn_view()
+
+      is_last_player = player_left == 1
+      turn_view = new_turn_view(is_last_player=is_last_player)
 
       # Define a concurrent task for timer countdown (along with discord.ui.View timeout)
       async def countdown():
@@ -209,19 +214,22 @@ class MiniGames(commands.Cog):
             
           await turn_msg.edit(
             embed=Embed(
-              title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
-              description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+              title=f"Round {cycle_object.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
+              description=f"**{current_player.mention}**'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
             ),
             view=turn_view
           )
 
           await asyncio.sleep(1)
-          timeout -= 1
+          timeout -= player_left > 1
 
-          # Skip if use '/cycle answer'
-          if cycle_object.just_answered:
-            timeout = 0
-            cycle_object.just_answered = False
+          # answered correctedly, so update leaderboard 
+          if cycle_object.just_answered == 1:
+            await leaderboard.edit(embed=cycle_object.leaderboard())
+
+          # Skip: last player -> answer needs to be correct | not last player -> answer doesn't need to be correct
+          if (is_last_player and cycle_object.just_answered == 1) or (not is_last_player and cycle_object.just_answered):
+              timeout = cycle_object.just_answered = 0
 
         turn_view.stop()
 
@@ -241,7 +249,6 @@ class MiniGames(commands.Cog):
         cycle_object.clean_up()
         return 
 
-      await leaderboard.edit(embed=cycle_object.leaderboard())
       cycle_object.advance_player()
     
     await turn_msg.delete()
@@ -261,7 +268,7 @@ class MiniGames(commands.Cog):
       return
     
     if cycle_object.current_phase() != "picking":
-      await ctx.respond(f"The game is not in the picking phase yet!", ephemeral=True)
+      await ctx.respond(f"The game is not in the picking phase!", ephemeral=True)
       return
 
     result = await get_anime_by_id(anime_id)
@@ -301,7 +308,7 @@ class MiniGames(commands.Cog):
       return
 
     if cycle_object.current_phase() != "turns":
-      await ctx.respond(f"The game is not in the turns phase yet!", ephemeral=True)
+      await ctx.respond(f"The game is not in the turns phase!", ephemeral=True)
       return
 
     if member != cycle_object.current_player():
@@ -322,14 +329,15 @@ class MiniGames(commands.Cog):
     embed = Embed(image=image_url)
 
     if correct:
+      cycle_object.just_answered = 1
       guessed += "**Correct!** 🤓"
       embed.color = Color.brand_green()
       cycle_object.add_done(member)
     else:
+      cycle_object.just_answered = 2
       guessed += "**Not quite right... Try again!** 🥹"
       embed.color = Color.brand_red()
 
-    cycle_object.just_answered = True
     embed.description = guessed
     answer_msg = await ctx.respond(embed=embed)
     msg = await answer_msg.original_response()
