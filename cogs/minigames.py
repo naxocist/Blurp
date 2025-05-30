@@ -206,9 +206,7 @@ class MiniGames(commands.Cog):
       async def countdown():
         timeout = cycle_object.turn_timeout
         while timeout > 0 and not turn_view.is_finished():
-          await asyncio.sleep(1)
-          timeout -= 1
-
+            
           await turn_msg.edit(
             embed=Embed(
               title=f"Round: {cycle_object.round} | Time Left: {timeout} seconds",
@@ -216,6 +214,14 @@ class MiniGames(commands.Cog):
             ),
             view=turn_view
           )
+
+          await asyncio.sleep(1)
+          timeout -= 1
+
+          # Skip if use '/cycle answer'
+          if cycle_object.just_answered:
+            timeout = 0
+            cycle_object.just_answered = False
 
         turn_view.stop()
 
@@ -241,12 +247,13 @@ class MiniGames(commands.Cog):
     await turn_msg.delete()
     cycle_object.clean_up()
   
-  # This command should be used in "picking" phase
   @cycle.command(description="Pick an anime for your assigned player")
   async def pick(self, ctx: ApplicationContext, anime_id: int):
     """
+    This command should be used in "picking" phase
     Pick an anime for assigned player using MAL anime id.
     """
+    await ctx.defer()
     member: Member = ctx.author
     cycle_object: CycleClass = players_games.get(member)
 
@@ -281,13 +288,13 @@ class MiniGames(commands.Cog):
     if req > 0: 
       await ctx.send(embed=Embed(description=f"There are {req} players who still need to pick an anime.", color=Color.yellow()))
     
-  
-  # This command should be used in "turns" phase
   @cycle.command(description="Submit your answer here!")
   async def answer(self, ctx: ApplicationContext, anime_id: int):
     """
+    This command should be used in "turns" phase
     Member will use this command to submit their answer
     """
+    await ctx.defer()
     member: Member = ctx.author
     cycle_object: CycleClass = players_games.get(member)
 
@@ -324,11 +331,11 @@ class MiniGames(commands.Cog):
       guessed += "**Not quite right... Try again!** 🥹"
       embed.color = Color.brand_red()
 
+    cycle_object.just_answered = True
     embed.description = guessed
     answer_msg = await ctx.respond(embed=embed)
     msg = await answer_msg.original_response()
     await msg.delete(delay=5)
-    
 
 
 def setup(bot):

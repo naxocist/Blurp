@@ -50,6 +50,7 @@ class CycleClass():
     self.player_animes: dict[Member, DotMap] = {}
     self.player_count = 0
 
+    self.just_answered = False
     self.active_player_index = 0
     self.phase_index = 0 
     self.round = 1
