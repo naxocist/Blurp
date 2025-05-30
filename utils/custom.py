@@ -93,7 +93,7 @@ class CycleClass():
     return CycleClass.phases[self.phase_index]
   
   def leaderboard(self) -> Embed:
-    description = "\n".join([f"**#{rank}**: {player.mention}" for rank, player in enumerate(self.done_players, start=1)])
+    description = "\n".join([f"**#{rank}**: {player.mention} ❮❮ {self.player_animes[player]}" for rank, player in enumerate(self.done_players, start=1)])
     if not description: 
       description = "No one's here..."
     return Embed(

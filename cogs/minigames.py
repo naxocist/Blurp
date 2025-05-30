@@ -323,10 +323,12 @@ class MiniGames(commands.Cog):
 
     correct = target.mal_id == mal_id
     guessed = f"{member.mention} guessed [{title}]({url})\n"
-    guessed += "Correct! 😱" if correct else "Not quite right... Try again! 🥹"
+    guessed += "**Correct!** 😱" if correct else "**Not quite right... Try again!** 🥹"
     embed = Embed(description=guessed, image=image_url, color=Color.brand_green() if correct else Color.brand_red())
 
-    await ctx.respond(embed=embed)
+    answer_msg = await ctx.respond(embed=embed)
+    msg = await answer_msg.original_response()
+    await msg.delete(delay=5)
     
 
 
