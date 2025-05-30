@@ -62,7 +62,9 @@ class CycleClass():
   def advance_player(self):
     if self.active_player_index == 0: 
       self.round += 1
-    self.active_player_index = (self.active_player_index + 1) % self.player_count
+
+    self.active_player_index += 1
+    self.active_player_index %= self.player.count
   
   def add_done(self, player: Member):
     self.done_players.append(player)
@@ -111,8 +113,8 @@ class MiniGames(commands.Cog):
     cycle_object = CycleClass()
 
     invite_view = View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
-    join_button = Button(label="click to join", style=discord.ButtonStyle.primary, emoji="🤓")
-    start_button = Button(label="click to start", style=discord.ButtonStyle.green, emoji="💀")
+    join_button = Button(label="join", style=discord.ButtonStyle.primary, emoji="🤓")
+    start_button = Button(label="start", style=discord.ButtonStyle.green, emoji="💀")
 
     async def join_callback(interaction: Interaction):
       nonlocal cycle_object
@@ -126,9 +128,9 @@ class MiniGames(commands.Cog):
       await interaction.response.send_message(f"{member.mention} joined!")
     
     async def start_callback(interaction: Interaction):
-      invite_view.stop()
       invite_view.disable_all_items()
       await interaction.response.edit_message(view=invite_view)
+      invite_view.stop()
     
     join_button.callback = join_callback
     start_button.callback = start_callback
@@ -172,15 +174,14 @@ class MiniGames(commands.Cog):
     cycle_object.random_pairs()
 
     # notify players about their assigned player via DM
+    pairs_info = ""
     for player in cycle_object.players:
       target = cycle_object.targets[player]
-      await player.send(embed=Embed(
-        description=f"You need to pick an anime for **{target.mention}!**",
-        color=Color.purple(),
-      ))
+      pairs_info += f"{player.mention} -> {target.mention}"
 
     await ctx.send(embed=Embed(
-      title="Pairing has been sent to every player via DM.", 
+      title="Pairing", 
+      description=pairs_info,
       color=Color.brand_green())
     )
 
@@ -188,7 +189,7 @@ class MiniGames(commands.Cog):
     cycle_object.advance_phase()
     await ctx.send(
       embed=Embed(
-        title="use `/cycle pick <anime_id>` command to pick an anime for your assigned player",
+        title="use `/cycle pick <anime_id>` command to pick an anime for your pair",
         description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only\nExample: https://myanimelist.net/anime/9776/A-Channel\n**9776** is the anime id",
         color=Color.yellow()
       )
@@ -196,10 +197,11 @@ class MiniGames(commands.Cog):
 
     timer = CycleClass.pick_timeout
     while timer > 0:
-      await asyncio.sleep(1) # ping every 1s
-      timer -= 1
       if len(cycle_object.player_animes) == cycle_object.player_count:
         break
+      await asyncio.sleep(1) # ping every 1s
+      timer -= 1
+      
 
     # someone didn't pick an anime in time
     if len(cycle_object.player_animes) < cycle_object.player_count:
@@ -213,7 +215,7 @@ class MiniGames(commands.Cog):
       cycle_object.clean_up()
       return 
     
-    # notify every player about other players' assigned anime
+    # notify everyone about assigned anime info
     for player in cycle_object.players:
       info = ""
       for plyr in cycle_object.players:
@@ -248,9 +250,8 @@ class MiniGames(commands.Cog):
       terminator: Member = None
 
       async def continue_callback(interaction: Interaction):
-        nonlocal turn_view
-        turn_view.stop()
         await interaction.response.defer() 
+        turn_view.stop()
 
       async def terminate_callback(interaction: Interaction):
         nonlocal is_terminate, terminator
@@ -265,11 +266,12 @@ class MiniGames(commands.Cog):
       turn_view.add_item(continue_button)
       turn_view.add_item(terminate_button)
 
-      message = await ctx.send(embed=Embed(
-        title=f"Round :{cycle_object.round}",
-        description=f"{current_player.mention}'s turn! Go ahead and ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
-        color=Color.purple(),
-      ),
+      message = await ctx.send(
+        embed=Embed(
+          title=f"Round :{cycle_object.round}",
+          description=f"{current_player.mention}'s turn! Go ahead and ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+          color=Color.purple(),
+        ),
         view=turn_view
       )
 
