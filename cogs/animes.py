@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import Member, ApplicationContext, Embed, Color, Bot
+from discord import Member, ApplicationContext, Embed, Color, Bot, Option
 
 from utils.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
 from utils.jikanv4 import get_random_anime
@@ -14,7 +14,7 @@ class Animes(commands.Cog):
   
   # expression emotions through gifs
   @commands.slash_command(guild_ids=guild_ids, description="Express your emotions")
-  async def expression(self, ctx: ApplicationContext, action: str = discord.Option(str, "What expression do you want to show?", choices=expressions)):
+  async def expression(self, ctx: ApplicationContext, action: Option = Option(str, "What expression do you want to show?", choices=expressions)):
     await ctx.defer()
 
     image = await get_img(action)
@@ -27,7 +27,7 @@ class Animes(commands.Cog):
 
   # actions to other members through gifs
   @commands.slash_command(guild_ids=guild_ids, description="Perform an action to another user") 
-  async def action(self, ctx: ApplicationContext, member: Member, action: str = discord.Option(str, "What action do you want to perform?", choices=actions_to_others)):
+  async def action(self, ctx: ApplicationContext, member: Member, action: Option = Option(str, "What action do you want to perform?", choices=actions_to_others)):
     await ctx.defer()
 
     image = await get_img(action)
