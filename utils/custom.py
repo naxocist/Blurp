@@ -1,11 +1,13 @@
 from __future__ import annotations
-from discord import ApplicationContext, Embed, Color, Member
-from discord.ui import View
+
+from discord import ApplicationContext, Embed, Color, Member, Interaction
+from discord.ui import View, Button
+import discord
+
 from dotmap import DotMap
 from typing import List, Callable, Optional
 import asyncio
 import random
-import time
 
 # global tmp var from minigames.py
 from utils.game_state import minigame_objects, players_games
@@ -32,6 +34,61 @@ async def count_down_timer(ctx: ApplicationContext,
         await timer_msg.delete()
       break
  
+
+class InviteView(View):
+
+  def __init__(self, cycle_object, timeout):
+    super().__init__(timeout=timeout, disable_on_timeout=True)
+    self.cycle_object = cycle_object
+    self.is_terminate = False
+    self.terminator = None
+
+  @discord.ui.button(label="join", style=discord.ButtonStyle.green, emoji="🤓")
+  async def join(self, button: Button, interaction: Interaction):
+    member: Member = interaction.user
+    if member in self.cycle_object.players:
+      await interaction.response.send_message("You are already in the game!", ephemeral=True)
+      return
+
+    self.cycle_object.add_player(member)
+    await interaction.response.send_message(f"{member.mention} joined!")
+
+  @discord.ui.button(label="force start", style=discord.ButtonStyle.blurple, emoji="💀")
+  async def start(self, button: Button, interaction: Interaction):
+    await interaction.response.defer()
+    self.stop()
+
+  @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
+  async def terminate(self, button: Button, interaction: Interaction):
+    await interaction.response.defer()
+    self.is_terminate = True
+    self.terminator = interaction.user
+    self.stop()
+
+
+class TurnView(View):
+
+  def __init__(self, is_last_player: bool):
+    super().__init__()
+    self.is_last_player = is_last_player
+    self.is_terminate = False
+    self.terminator = None
+
+    next_player_button = Button(label="next player", style=discord.ButtonStyle.green, disabled=is_last_player)
+    next_player_button.callback = self.next_player
+    self.add_item(next_player_button)
+
+  async def next_player(self, interaction: Interaction):
+    await interaction.response.defer()
+    self.stop()
+
+  @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
+  async def terminate(self, button: Button, interaction: Interaction):
+    await interaction.response.defer()
+    self.is_terminate = True
+    self.terminator = interaction.user
+    self.stop()
+
 
 class CycleClass():
   # time limit in seconds
@@ -64,7 +121,7 @@ class CycleClass():
     players_games[player] = self # store which game the player is in
 
   # shuffle and find derangements of players, then assigned players to each other
-  def random_pairs(self):
+  def random_targets(self):
     random.shuffle(self.players)
     pairs = [i for i in range(self.player_count)]
 

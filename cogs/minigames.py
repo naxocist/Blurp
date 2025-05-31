@@ -9,7 +9,7 @@ from discord.ui import View, Button
 import asyncio
 from utils.jikanv4 import get_anime_by_id
 from utils.nekosbest import get_img
-from utils.custom import count_down_timer, CycleClass
+from utils.custom import count_down_timer, InviteView, TurnView, CycleClass
 from utils.game_state import players_games
 
 from credentials import guild_ids
@@ -20,58 +20,21 @@ class MiniGames(commands.Cog):
   def __init__(self, bot): 
     self.bot: Bot = bot
   
-  cycle = discord.SlashCommandGroup("cycle", "cycle game commands", guild_ids=guild_ids)
+  cycle = discord.SlashCommandGroup("cycle", "Anime cycle game commands", guild_ids=guild_ids)
 
-  @cycle.command(description="Start an anime cycle game")
-  async def start(self, ctx: ApplicationContext):
+  @cycle.command(description="Initialize an anime cycle game")
+  async def init(self, ctx: ApplicationContext):
     """
-    This game will assign each player a another random player.
-    Everyone will pick an anime for their assigned player.
-    After picking, every player will know the assigned anime of other players except their own.
-    Each player will then take turns to ask for a hint from other players about the anime they was assigned to.
-    Who knows the anime first wins!
+    Anime Cycle minigame
     """
 
     await ctx.defer()
     
     cycle_object = CycleClass()
 
-    invite_view = View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
-    join_button = Button(label="join", style=discord.ButtonStyle.green, emoji="🤓")
-    start_button = Button(label="force start", style=discord.ButtonStyle.blurple, emoji="💀")
-    terminate_button = Button(label="terminate", style=discord.ButtonStyle.red)
-
-    async def join_callback(interaction: Interaction):
-      member: Member = interaction.user
-      if member in cycle_object.players:
-        await interaction.response.send_message(f"You are already in the game!", ephemeral=True)
-        return
-
-      cycle_object.add_player(member)
-      await interaction.response.send_message(f"{member.mention} joined!")
-    
-    async def start_callback(interaction: Interaction):
-      await interaction.response.defer()
-      invite_view.stop()
-
-    is_terminate = False
-    terminator = None
-    async def terminate_callback(interaction: Interaction):
-      nonlocal is_terminate, terminator
-      await interaction.response.defer()
-      is_terminate = True
-      terminator = interaction.user
-      invite_view.stop()
-
-    join_button.callback = join_callback
-    start_button.callback = start_callback
-    terminate_button.callback = terminate_callback
-    invite_view.add_item(join_button)
-    invite_view.add_item(start_button)
-    invite_view.add_item(terminate_button)
-
+    invite_view = InviteView(cycle_object, cycle_object.join_timeout)
     intro_msg = await ctx.respond(
-      embed=Embed(title="Anime Cycle has been started!", color=Color.nitro_pink()),
+      embed=Embed(title="Anime Cycle has been initialized!", color=Color.nitro_pink()),
       view=invite_view
     )
 
@@ -79,9 +42,9 @@ class MiniGames(commands.Cog):
     invite_view.disable_all_items()
     await intro_msg.edit(view=invite_view)
 
-    if is_terminate:
+    if invite_view.is_terminate:
       await ctx.send(embed=Embed(
-        description=f"**{terminator.mention} terminated the game...**",
+        description=f"**{invite_view.terminator.mention} terminated the game...**",
         color=Color.red()
       ))
       return 
@@ -95,8 +58,8 @@ class MiniGames(commands.Cog):
     if cycle_object.player_count < 2:
       await ctx.send(
         embed=Embed(
-          title="Anime Cycle game cancelled",
-          description="Too few players to start the game.",
+          title="Anime Cycle terminated",
+          description="You need at least 2 players!",
           color=Color.red()
         ),
       )
@@ -104,7 +67,7 @@ class MiniGames(commands.Cog):
       return
 
     # assign every player another player
-    cycle_object.random_pairs()
+    cycle_object.random_targets()
 
     # LOBBY & PAIRING STATUS
     players_list = ', '.join([player.mention for player in cycle_object.players])
@@ -166,47 +129,14 @@ class MiniGames(commands.Cog):
     # after pick delay, let players look at the sent info
     await count_down_timer(ctx, cycle_object.delay_after_pick, title_prefix="Game Start In:")
 
-    is_terminate = False
-    terminator: Member = None
-
-    # Turn View template
-    def new_turn_view(is_last_player) -> View:
-      nonlocal is_terminate, terminator
-      turn_view = View()
-
-      continue_button = Button(label="next player", style=discord.ButtonStyle.green, disabled=is_last_player)
-      terminate_button.disabled = False
-
-      is_terminate = False
-      terminator = None
-
-      async def continue_callback(interaction: Interaction):
-        await interaction.response.defer()
-        turn_view.stop()
-
-      async def terminate_callback(interaction: Interaction):
-        nonlocal is_terminate, terminator
-        await interaction.response.defer()
-        is_terminate = True
-        terminator = interaction.user
-        turn_view.stop()
-
-      continue_button.callback = continue_callback
-      terminate_button.callback = terminate_callback
-      turn_view.add_item(continue_button)
-      turn_view.add_item(terminate_button)
-
-      return turn_view
-      
-
     # Initial turn setup
     turn_msg = await ctx.send(
       embed=Embed(
-        title=f"Round: {cycle_object.round} | Time Left: {cycle_object.turn_timeout} seconds",
+        title=f"Round {cycle_object.round} | ⏱︎ Time left: {cycle_object.turn_timeout} secs | Player left: {cycle_object.player_count}",
         description=f"{cycle_object.current_player().mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
         color=Color.purple(),
       ),
-      view=new_turn_view(is_last_player=False)
+      view=TurnView(is_last_player=False)
     )
 
     leaderboard = await ctx.send(embed=cycle_object.leaderboard())
@@ -222,7 +152,7 @@ class MiniGames(commands.Cog):
         continue
 
       is_last_player = player_left == 1
-      turn_view = new_turn_view(is_last_player=is_last_player)
+      turn_view = TurnView(is_last_player=is_last_player)
 
       timeout = cycle_object.turn_timeout
       while timeout > 0 and not turn_view.is_finished():
@@ -230,7 +160,7 @@ class MiniGames(commands.Cog):
         await turn_msg.edit(
           embed=Embed(
             title=f"Round {cycle_object.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
-            description=f"**{current_player.mention}**'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+            description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
           ),
           view=turn_view
         )
@@ -249,10 +179,10 @@ class MiniGames(commands.Cog):
       turn_view.stop()
 
       # Early terminate by a member
-      if is_terminate:
+      if turn_view.is_terminate:
         await turn_msg.delete()
         await ctx.send(embed=Embed(
-          description=f"**{terminator.mention} terminated the game...**",
+          description=f"**{turn_view.terminator.mention} terminated the game...**",
           color=Color.red()
         ))
         cycle_object.clean_up()
