@@ -37,8 +37,9 @@ class MiniGames(commands.Cog):
     cycle_object = CycleClass()
 
     invite_view = View(timeout=CycleClass.join_timeout, disable_on_timeout=True)
-    join_button = Button(label="join", style=discord.ButtonStyle.primary, emoji="🤓")
-    start_button = Button(label="force start", style=discord.ButtonStyle.green, emoji="💀")
+    join_button = Button(label="join", style=discord.ButtonStyle.green, emoji="🤓")
+    start_button = Button(label="force start", style=discord.ButtonStyle.blurple, emoji="💀")
+    terminate_button = Button(label="terminate", style=discord.ButtonStyle.red)
 
     async def join_callback(interaction: Interaction):
       member: Member = interaction.user
@@ -50,21 +51,40 @@ class MiniGames(commands.Cog):
       await interaction.response.send_message(f"{member.mention} joined!")
     
     async def start_callback(interaction: Interaction):
-      invite_view.disable_all_items()
-      await interaction.response.edit_message(view=invite_view)
+      await interaction.response.defer()
       invite_view.stop()
-    
+
+    is_terminate = False
+    terminator = None
+    async def terminate_callback(interaction: Interaction):
+      nonlocal is_terminate, terminator
+      await interaction.response.defer()
+      is_terminate = True
+      terminator = interaction.user
+      invite_view.stop()
+
     join_button.callback = join_callback
     start_button.callback = start_callback
+    terminate_button.callback = terminate_callback
     invite_view.add_item(join_button)
     invite_view.add_item(start_button)
+    invite_view.add_item(terminate_button)
 
-    await ctx.respond(
-      embed=Embed(title="Anime Cycle has been started!", color=Color.green()), 
+    intro_msg = await ctx.respond(
+      embed=Embed(title="Anime Cycle has been started!", color=Color.nitro_pink()),
       view=invite_view
     )
 
     await invite_view.wait()
+    invite_view.disable_all_items()
+    await intro_msg.edit(view=invite_view)
+
+    if is_terminate:
+      await ctx.send(embed=Embed(
+        description=f"**{terminator.mention} terminated the game...**",
+        color=Color.red()
+      ))
+      return 
 
     # DEMO player
     cycle_object.add_player(ctx.author)
@@ -152,12 +172,10 @@ class MiniGames(commands.Cog):
     # Turn View template
     def new_turn_view(is_last_player) -> View:
       nonlocal is_terminate, terminator
-      turn_view = View(timeout=cycle_object.turn_timeout, disable_on_timeout=True)
-      if is_last_player:
-        turn_view = View()
+      turn_view = View()
 
       continue_button = Button(label="next player", style=discord.ButtonStyle.green, disabled=is_last_player)
-      terminate_button = Button(label="terminate", style=discord.ButtonStyle.red)
+      terminate_button.disabled = False
 
       is_terminate = False
       terminator = None
@@ -181,7 +199,6 @@ class MiniGames(commands.Cog):
       return turn_view
       
 
-    turn_view = new_turn_view(is_last_player=False)
     # Initial turn setup
     turn_msg = await ctx.send(
       embed=Embed(
@@ -189,7 +206,7 @@ class MiniGames(commands.Cog):
         description=f"{cycle_object.current_player().mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
         color=Color.purple(),
       ),
-      view=turn_view
+      view=new_turn_view(is_last_player=False)
     )
 
     leaderboard = await ctx.send(embed=cycle_object.leaderboard())
@@ -207,37 +224,29 @@ class MiniGames(commands.Cog):
       is_last_player = player_left == 1
       turn_view = new_turn_view(is_last_player=is_last_player)
 
-      # Define a concurrent task for timer countdown (along with discord.ui.View timeout)
-      async def countdown():
-        timeout = cycle_object.turn_timeout
-        while timeout > 0 and not turn_view.is_finished():
-            
-          await turn_msg.edit(
-            embed=Embed(
-              title=f"Round {cycle_object.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
-              description=f"**{current_player.mention}**'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
-            ),
-            view=turn_view
-          )
+      timeout = cycle_object.turn_timeout
+      while timeout > 0 and not turn_view.is_finished():
+          
+        await turn_msg.edit(
+          embed=Embed(
+            title=f"Round {cycle_object.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
+            description=f"**{current_player.mention}**'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+          ),
+          view=turn_view
+        )
 
-          await asyncio.sleep(1)
-          timeout -= player_left > 1
+        await asyncio.sleep(1)
+        timeout -= not is_last_player
 
-          # answered correctedly, so update leaderboard 
-          if cycle_object.just_answered == 1:
-            await leaderboard.edit(embed=cycle_object.leaderboard())
+        # answered correctedly, so update leaderboard 
+        if cycle_object.just_answered == 1:
+          await leaderboard.edit(embed=cycle_object.leaderboard())
 
-          # Skip: last player -> answer needs to be correct | not last player -> answer doesn't need to be correct
-          if (is_last_player and cycle_object.just_answered == 1) or (not is_last_player and cycle_object.just_answered):
-              timeout = cycle_object.just_answered = 0
+        # Skip: last player -> answer needs to be correct | not last player -> answer doesn't need to be correct
+        if (is_last_player and cycle_object.just_answered == 1) or (not is_last_player and cycle_object.just_answered):
+            timeout = cycle_object.just_answered = 0
 
-        turn_view.stop()
-
-      countdown_task = asyncio.create_task(countdown())
-
-      await turn_view.wait()
-      if countdown_task.cancel():
-        turn_view.stop()
+      turn_view.stop()
 
       # Early terminate by a member
       if is_terminate:
