@@ -15,7 +15,7 @@ class InviteView(View):
   def __init__(self, cycle_object, timeout):
     super().__init__(timeout=timeout, disable_on_timeout=True)
     self.cycle_object = cycle_object
-    self.is_terminate = False
+    self.is_terminated = False
     self.terminator = None
 
   @discord.ui.button(label="join", style=discord.ButtonStyle.green, emoji="🤓")
@@ -36,7 +36,7 @@ class InviteView(View):
   @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
   async def terminate(self, button: Button, interaction: Interaction):
     await interaction.response.defer()
-    self.is_terminate = True
+    self.is_terminated = True
     self.terminator = interaction.user
     self.stop()
 
@@ -46,7 +46,7 @@ class TurnView(View):
   def __init__(self, is_last_player: bool):
     super().__init__()
     self.is_last_player = is_last_player
-    self.is_terminate = False
+    self.is_terminated = False
     self.terminator = None
 
     next_player_button = Button(label="next player", style=discord.ButtonStyle.green, disabled=is_last_player)
@@ -60,7 +60,7 @@ class TurnView(View):
   @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
   async def terminate(self, button: Button, interaction: Interaction):
     await interaction.response.defer()
-    self.is_terminate = True
+    self.is_terminated = True
     self.terminator = interaction.user
     self.stop()
 

@@ -41,7 +41,7 @@ class MiniGames(commands.Cog):
     invite_view.disable_all_items()
     await intro_msg.edit(view=invite_view)
 
-    if invite_view.is_terminate:
+    if invite_view.is_terminated:
       await ctx.send(embed=Embed(
         description=f"**{invite_view.terminator.mention} terminated the game...**",
         color=Color.red()
@@ -178,7 +178,7 @@ class MiniGames(commands.Cog):
       turn_view.stop()
 
       # Early terminate by a member
-      if turn_view.is_terminate:
+      if turn_view.is_terminated:
         await turn_msg.delete()
         await ctx.send(embed=Embed(
           description=f"**{turn_view.terminator.mention} terminated the game...**",
