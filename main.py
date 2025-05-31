@@ -11,7 +11,7 @@ bot = discord.Bot(
 )
 bot.activity = discord.Activity(name="anime", type=discord.ActivityType.watching)
 
-cogs_list = ["animes", "events", "minigames"]
+cogs_list = ["animes", "events", "anime_cycle", "anime_clues"]
 
 if __name__ == "__main__":
 

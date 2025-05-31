@@ -14,7 +14,7 @@ from utils.customs.game_state import players_games
 from credentials import guild_ids
 
 
-class MiniGames(commands.Cog):
+class AnimeCycle(commands.Cog):
 
     def __init__(self, bot):
         self.bot: Bot = bot
@@ -25,10 +25,6 @@ class MiniGames(commands.Cog):
 
     @cycle.command(description="Initialize an anime cycle game")
     async def init(self, ctx: ApplicationContext):
-        """
-        Anime Cycle minigame
-        """
-
         await ctx.defer()
 
         cycle_object = CycleClass()
@@ -328,4 +324,4 @@ class MiniGames(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(MiniGames(bot))
+    bot.add_cog(AnimeCycle(bot))

@@ -68,5 +68,5 @@ class Events(commands.Cog):
             print("An error occured:", error)
 
 
-def setup(bot: Bot):
+def setup(bot):
     bot.add_cog(Events(bot))

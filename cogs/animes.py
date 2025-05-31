@@ -85,20 +85,20 @@ class Animes(commands.Cog):
     async def anime(self, ctx):
         await ctx.defer()
 
-        random_anime = await get_random_anime()  # recieve DotMap object
-        data = random_anime.data
+        anime = await get_random_anime()  # recieve DotMap object
+        anime = anime.data
 
-        title = data.title
-        url = data.url
-        image = data.images.jpg.image_url
+        title = anime.title
+        url = anime.url
+        image = anime.images.jpg.image_url
         genres = " ".join(
-            [f"`{genre.name}`" for genre in data.genres] if data.genres else ["`N/A`"]
+            [f"`{genre.name}`" for genre in anime.genres] if anime.genres else ["`N/A`"]
         )
-        season = data.season
-        year = data.year
-        episodes = data.episodes or "N/A"
-        score = f"`{data.score}`/10" or "`N/A`"
-        ranked = f"#{data.rank}" or "N/A"
+        season = anime.season
+        year = anime.year
+        episodes = anime.episodes or "N/A"
+        score = f"`{anime.score}`/10" or "`N/A`"
+        ranked = f"#{anime.rank}" or "N/A"
 
         embed = Embed(title=title, url=url, image=image, color=Color.random())
 

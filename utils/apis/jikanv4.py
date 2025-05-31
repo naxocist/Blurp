@@ -16,6 +16,14 @@ async def get_random_anime() -> DotMap:
         return DotMap(res)
 
 
+async def get_anime_characters(mal_id: int) -> DotMap:
+    async with limiter:
+        # Convert the synchronous Jikan call to an asynchronous one
+        loop = asyncio.get_running_loop()
+        res = await loop.run_in_executor(None, jikan.anime, mal_id, "characters")
+        return DotMap(res)
+
+
 async def get_anime_by_id(anime_id):
     try:
         async with limiter:
