@@ -51,6 +51,7 @@ class CycleClass():
     self.player_animes: dict[Member, DotMap] = {}
     self.player_count = 0
 
+    self.turn_done: dict[Member, int] = {}
     self.just_answered = 0 # 0: not yet answered, 1: answered (wrong), 2: answered (right)
     self.active_player_index = 0
     self.phase_index = 0 
@@ -101,7 +102,7 @@ class CycleClass():
     for rank, player in enumerate(self.done_players, start=1):
       anime = self.player_animes[player]
       giver = self.given_by[player]
-      description += f"**#{rank}**: {player.mention}\n[{anime.title}]({anime.url}) ❮❮ {giver.mention}\n" 
+      description += f"**#{rank}**: {player.mention} **Round {self.turn_done[player]}**\n[{anime.title}]({anime.url}) ❮❮ {giver.mention}\n" 
 
     if not description: 
       description = "No one's here..."

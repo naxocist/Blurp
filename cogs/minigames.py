@@ -333,6 +333,7 @@ class MiniGames(commands.Cog):
       guessed += "**Correct!** 🤓"
       embed.color = Color.brand_green()
       cycle_object.add_done(member)
+      cycle_object.turn_done[member] = cycle_object.round
     else:
       cycle_object.just_answered = 2
       guessed += "**Not quite right... Try again!** 🥹"
