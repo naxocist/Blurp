@@ -2,8 +2,8 @@ import discord
 from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Bot, Option
 
-from utils.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
-from utils.jikanv4 import get_random_anime
+from utils.apis.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
+from utils.apis.jikanv4 import get_random_anime
 
 from credentials import guild_ids
 

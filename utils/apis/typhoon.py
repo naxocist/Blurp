@@ -1,8 +1,8 @@
 from openai import OpenAI
-from ..credentials import TYPHOON_API_KEY
+from ... import credentials
 
 client = OpenAI(
-   api_key=TYPHOON_API_KEY,
+   api_key=credentials.TYPHOON_API_KEY,
    base_url="https://api.opentyphoon.ai/v1"
 )
 

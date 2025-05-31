@@ -2,7 +2,7 @@ from typing import List, TYPE_CHECKING
 from discord import Member
 
 if TYPE_CHECKING:
-    from Blurp.utils.custom import CycleClass
+    from .classes import CycleClass
 
 # shared game states
 minigame_objects: List["CycleClass"] = [] 

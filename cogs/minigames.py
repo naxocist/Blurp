@@ -1,16 +1,15 @@
 from dotmap import DotMap
-from typing import List
 
 import discord
 from discord.ext import commands
-from discord import Member, ApplicationContext, Embed, Color, Interaction, Bot
-from discord.ui import View, Button
-
+from discord import Member, ApplicationContext, Embed, Color, Bot
 import asyncio
-from utils.jikanv4 import get_anime_by_id
-from utils.nekosbest import get_img
-from utils.custom import count_down_timer, InviteView, TurnView, CycleClass
-from utils.game_state import players_games
+
+from utils.apis.jikanv4 import get_anime_by_id
+from utils.apis.nekosbest import get_img
+from utils.customs.classes import InviteView, TurnView, CycleClass
+from utils.customs.commands import count_down_timer
+from utils.customs.game_state import players_games
 
 from credentials import guild_ids
 

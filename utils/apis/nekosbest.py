@@ -1,6 +1,6 @@
 from typing import Union
-from nekosbest import Client, Result
 import lemminflect
+from nekosbest import Client, Result
 
 client = Client()
 

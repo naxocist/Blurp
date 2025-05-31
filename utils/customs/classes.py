@@ -1,39 +1,14 @@
-from __future__ import annotations
+from typing import List
 
-from discord import ApplicationContext, Embed, Color, Member, Interaction
-from discord.ui import View, Button
 import discord
+from discord import Interaction, Member, Embed, Color
+from discord.ui import View, Button
 
 from dotmap import DotMap
-from typing import List, Callable, Optional
-import asyncio
 import random
 
-# global tmp var from minigames.py
-from utils.game_state import minigame_objects, players_games
+from .game_state import minigame_objects, players_games
 
-
-async def count_down_timer(ctx: ApplicationContext,
-                           timeout: int, *, 
-                           title_prefix: str = "Time Left:", 
-                           interval: int = 5, 
-                           check_done: Optional[Callable] = None):
-
-  timer_msg = await ctx.send(embed=Embed(title=f"{title_prefix} {timeout} seconds", color=Color.dark_magenta()))
-  while timeout > 0:
-    await asyncio.sleep(1) # ping every 1s
-    timeout -= 1
-
-    if timeout == 0:
-      await timer_msg.delete()
-    elif timeout % interval == 0 or timeout <= 5:
-      await timer_msg.edit(embed=Embed(title=f"{title_prefix} {timeout} seconds", color=Color.dark_magenta()))
-
-    if check_done and check_done():
-      if timeout > 0:
-        await timer_msg.delete()
-      break
- 
 
 class InviteView(View):
 
