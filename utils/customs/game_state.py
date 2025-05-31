@@ -5,5 +5,5 @@ if TYPE_CHECKING:
     from .classes import CycleClass
 
 # shared game states
-minigame_objects: List["CycleClass"] = [] 
-players_games: dict[Member, "CycleClass"] = {} 
+minigame_objects: List["CycleClass"] = []
+players_games: dict[Member, "CycleClass"] = {}
