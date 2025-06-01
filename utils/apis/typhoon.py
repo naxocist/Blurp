@@ -12,7 +12,7 @@ async def get_synopsis_clue(anime) -> str:
     names = ", ".join([c.character.name for c in characters_data])
 
     task_th = f"สรุปเรื่องย่อของอนิเมะเรื่องนี้เป็นภาษาไทยโดยไม่ใช้คำว่า {names} หรือคำอื่น ๆ ที่มีโอกาสเป็นชื่อของตัวละครในเรื่อง เรื่องย่อมีดังนี้"
-    task_en = f"Summarize this anime's synopsis without using these words '{names}' and other words that are possibly character names"
+    task_en = f"Summarize and rephrase this anime's synopsis while ignoring these words '{names}' and other words that are possibly character names"
     synopsis = anime.synopsis
     content = task_en + synopsis
 

@@ -8,10 +8,45 @@ from utils.apis.jikanv4 import get_random_anime
 from credentials import guild_ids
 
 
-class Animes(commands.Cog):
+class Anime(commands.Cog):
 
     def __init__(self, bot):
         self.bot: Bot = bot
+
+    # get a random anime based on jikan-v4 API
+    @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
+    async def anime(self, ctx):
+        await ctx.defer()
+
+        anime = await get_random_anime()  # recieve DotMap object
+        anime = anime.data
+
+        title = anime.title
+        url = anime.url
+        image = anime.images.jpg.image_url
+        genres = " ".join(
+            [f"`{genre.name}`" for genre in anime.genres] if anime.genres else ["`N/A`"]
+        )
+        season = anime.season
+        year = anime.year
+        episodes = anime.episodes or "N/A"
+        score = f"`{anime.score}`/10" or "`N/A`"
+        ranked = f"#{anime.rank}" or "N/A"
+
+        embed = Embed(title=title, url=url, image=image, color=Color.random())
+
+        embed.add_field(name="Genres", value=genres, inline=False)
+        embed.add_field(
+            name="Season",
+            value=f"`{season.capitalize() + " " + str(year) if season and year else "N/A"}`",
+            inline=True,
+        )
+        embed.add_field(name="Length", value=f"`{episodes}` episodes", inline=True)
+        embed.add_field(name="Score", value=f"{score}", inline=True)
+        embed.add_field(name=f"Ranked: `{ranked}`", value="", inline=False)
+
+        response = await ctx.respond(embed=embed)
+        await discord.Message.add_reaction(response, "📬")
 
     # expression emotions through gifs
     @commands.slash_command(guild_ids=guild_ids, description="Express your emotions")
@@ -80,41 +115,6 @@ class Animes(commands.Cog):
 
         await ctx.respond(embed=embed)
 
-    # get a random anime based on jikan-v4 API
-    @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
-    async def anime(self, ctx):
-        await ctx.defer()
-
-        anime = await get_random_anime()  # recieve DotMap object
-        anime = anime.data
-
-        title = anime.title
-        url = anime.url
-        image = anime.images.jpg.image_url
-        genres = " ".join(
-            [f"`{genre.name}`" for genre in anime.genres] if anime.genres else ["`N/A`"]
-        )
-        season = anime.season
-        year = anime.year
-        episodes = anime.episodes or "N/A"
-        score = f"`{anime.score}`/10" or "`N/A`"
-        ranked = f"#{anime.rank}" or "N/A"
-
-        embed = Embed(title=title, url=url, image=image, color=Color.random())
-
-        embed.add_field(name="Genres", value=genres, inline=False)
-        embed.add_field(
-            name="Season",
-            value=f"`{season.capitalize() + " " + str(year) if season and year else "N/A"}`",
-            inline=True,
-        )
-        embed.add_field(name="Length", value=f"`{episodes}` episodes", inline=True)
-        embed.add_field(name="Score", value=f"{score}", inline=True)
-        embed.add_field(name=f"Ranked: `{ranked}`", value="", inline=False)
-
-        response = await ctx.respond(embed=embed)
-        await discord.Message.add_reaction(response, "📬")
-
 
 def setup(bot):
-    bot.add_cog(Animes(bot))
+    bot.add_cog(Anime(bot))

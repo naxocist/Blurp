@@ -7,7 +7,7 @@ async def count_down_timer(
     ctx: ApplicationContext,
     timeout: int,
     *,
-    title_prefix: str = "Time Left:",
+    title_prefix: str = "Time left:",
     interval: int = 5,
     check_done: Optional[Callable] = None,
 ):

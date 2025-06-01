@@ -10,7 +10,7 @@ limiter = AsyncLimiter(max_rate=3, time_period=1)  # limit to 3 requests per 1 s
 
 async def get_random_anime() -> DotMap:
     async with limiter:
-        # Convert the synchronous Jikan call to an asynchronous one
+        # wrap syncronous jikan method with a limited asyncronous loop
         loop = asyncio.get_running_loop()
         res = await loop.run_in_executor(None, jikan.random, "anime")
         return DotMap(res)
@@ -18,13 +18,13 @@ async def get_random_anime() -> DotMap:
 
 async def get_anime_characters(mal_id: int) -> DotMap:
     async with limiter:
-        # Convert the synchronous Jikan call to an asynchronous one
+        # wrap syncronous jikan method with a limited asyncronous loop
         loop = asyncio.get_running_loop()
         res = await loop.run_in_executor(None, jikan.anime, mal_id, "characters")
         return DotMap(res)
 
 
-async def get_anime_by_id(anime_id):
+async def get_anime_by_id(anime_id) -> DotMap:
     try:
         async with limiter:
             loop = asyncio.get_running_loop()
