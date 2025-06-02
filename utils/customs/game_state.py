@@ -1,9 +1,10 @@
+from __future__ import annotations
 from typing import List, TYPE_CHECKING
 from discord import Member
 
 if TYPE_CHECKING:
-    from .classes import CycleClass
+    from .anicycle_classes import CycleClass
 
 # shared game states
-minigame_objects: List["CycleClass"] = []
-players_games: dict[Member, "CycleClass"] = {}
+minigame_objects: List[CycleClass] = []
+players_games: dict[Member, CycleClass] = {}

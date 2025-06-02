@@ -151,6 +151,7 @@ dependencies = [
     { name = "openai" },
     { name = "py-cord" },
     { name = "python-dotenv" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -164,6 +165,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.82.0" },
     { name = "py-cord", specifier = ">=2.6.1" },
     { name = "python-dotenv", specifier = ">=1.1.0" },
+    { name = "requests", specifier = ">=2.32.3" },
 ]
 
 [[package]]

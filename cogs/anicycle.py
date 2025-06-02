@@ -5,31 +5,34 @@ from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Bot
 import asyncio
 
+# apis
 from utils.apis.jikanv4 import get_anime_by_id
 from utils.apis.nekosbest import get_img
-from utils.customs.classes import InviteView, TurnView, CycleClass
+
+# customs - UI & state
+from utils.customs.anicycle_classes import InviteView, TurnView, CycleClass
 from utils.customs.commands import count_down_timer
 from utils.customs.game_state import players_games
 
 from credentials import guild_ids
 
 
-class AnimeCycle(commands.Cog):
+class AniCycle(commands.Cog):
 
     def __init__(self, bot):
         self.bot: Bot = bot
 
     cycle = discord.SlashCommandGroup(
-        "cycle", "Anime cycle game commands", guild_ids=guild_ids
+        "cycle", "anime cycle game commands", guild_ids=guild_ids
     )
 
     @cycle.command(description="Initialize an anime cycle game")
     async def init(self, ctx: ApplicationContext):
         await ctx.defer()
 
-        cycle_object = CycleClass()
+        cycle_obj = CycleClass()
 
-        invite_view = InviteView(cycle_object, cycle_object.join_timeout)
+        invite_view = InviteView(cycle_obj, cycle_obj.join_timeout)
         intro_msg = await ctx.respond(
             embed=Embed(
                 title="Anime Cycle has been initialized!", color=Color.nitro_pink()
@@ -51,9 +54,9 @@ class AnimeCycle(commands.Cog):
             return
 
         # DEMO player
-        cycle_object.add_player(ctx.author)
-        cycle_object.add_player(self.bot.user)
-        cycle_object.player_animes[ctx.author] = DotMap(
+        cycle_obj.add_player(ctx.author)
+        cycle_obj.add_player(self.bot.user)
+        cycle_obj.player_animes[ctx.author] = DotMap(
             dict(
                 title="Aharen-san wa Hakarenai Season 2",
                 url="https://myanimelist.net/anime/59466/Aharen-san_wa_Hakarenai_Season_2",
@@ -62,7 +65,7 @@ class AnimeCycle(commands.Cog):
         )
 
         # too few players to start the game
-        if cycle_object.player_count < 2:
+        if cycle_obj.player_count < 2:
             await ctx.send(
                 embed=Embed(
                     title="Anime Cycle terminated",
@@ -70,17 +73,17 @@ class AnimeCycle(commands.Cog):
                     color=Color.red(),
                 ),
             )
-            cycle_object.clean_up()
+            cycle_obj.clean_up()
             return
 
         # assign every player another player
-        cycle_object.random_targets()
+        cycle_obj.random_targets()
 
         # * LOBBY & PAIRING STATUS
-        players_list = ", ".join([player.mention for player in cycle_object.players])
+        players_list = ", ".join([player.mention for player in cycle_obj.players])
         pairs_info = ""
-        for player in cycle_object.players:
-            target = cycle_object.targets[player]
+        for player in cycle_obj.players:
+            target = cycle_obj.targets[player]
             pairs_info += f"{player.mention} ➜ {target.mention}\n"
 
         await ctx.send(
@@ -93,7 +96,7 @@ class AnimeCycle(commands.Cog):
         )
 
         # * PICKING: each players pick an anime for their target using /pick command
-        cycle_object.advance_phase()
+        cycle_obj.advance_phase()
         picking_msg = await ctx.send(
             embed=Embed(
                 title="use `/cycle pick <anime_id>` to pick an anime for your pair",
@@ -102,9 +105,7 @@ class AnimeCycle(commands.Cog):
             )
         )
 
-        all_picked = (
-            lambda: len(cycle_object.player_animes) == cycle_object.player_count
-        )
+        all_picked = lambda: len(cycle_obj.player_animes) == cycle_obj.player_count
         await count_down_timer(ctx, CycleClass.pick_timeout, check_done=all_picked)
 
         await picking_msg.delete()
@@ -118,16 +119,16 @@ class AnimeCycle(commands.Cog):
                     color=Color.red(),
                 )
             )
-            cycle_object.clean_up()
+            cycle_obj.clean_up()
             return
 
         # DM everyone about assigned anime info
-        for player in cycle_object.players:
+        for player in cycle_obj.players:
             info = ""
-            for plyr in cycle_object.players:
+            for plyr in cycle_obj.players:
                 if plyr == player:
                     continue
-                assigned_anime = cycle_object.player_animes[plyr]
+                assigned_anime = cycle_obj.player_animes[plyr]
                 info += f"{plyr.mention} ❮❮ [{assigned_anime.title}]({assigned_anime.url})\n"
 
             if player.bot:
@@ -140,40 +141,40 @@ class AnimeCycle(commands.Cog):
 
         # after pick delay, let players look at the sent info
         await count_down_timer(
-            ctx, cycle_object.delay_after_pick, title_prefix="Game Start In:"
+            ctx, cycle_obj.delay_after_pick, title_prefix="Game Start In:"
         )
 
         # Initial turn setup
         turn_msg = await ctx.send(
             embed=Embed(
-                title=f"Round {cycle_object.round} | ⏱︎ Time left: {cycle_object.turn_timeout} secs | Player left: {cycle_object.player_count}",
-                description=f"{cycle_object.current_player().mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+                title=f"Round {cycle_obj.round} | ⏱︎ Time left: {cycle_obj.turn_timeout} secs | Player left: {cycle_obj.player_count}",
+                description=f"{cycle_obj.current_player().mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
                 color=Color.purple(),
             ),
             view=TurnView(is_last_player=False),
         )
 
-        leaderboard = await ctx.send(embed=cycle_object.leaderboard())
+        leaderboard = await ctx.send(embed=cycle_obj.leaderboard())
 
         # * Turn: Now the game starts, each player will take turns to get hints or take a guess about their assigned anime
-        cycle_object.advance_phase()
-        while len(cycle_object.done_players) < cycle_object.player_count:
-            player_left = cycle_object.player_count - len(cycle_object.done_players)
-            current_player = cycle_object.current_player()
+        cycle_obj.advance_phase()
+        while len(cycle_obj.done_players) < cycle_obj.player_count:
+            player_left = cycle_obj.player_count - len(cycle_obj.done_players)
+            current_player = cycle_obj.current_player()
 
-            if current_player in cycle_object.done_players:
-                cycle_object.advance_player()
+            if current_player in cycle_obj.done_players:
+                cycle_obj.advance_player()
                 continue
 
             is_last_player = player_left == 1
             turn_view = TurnView(is_last_player=is_last_player)
 
-            timeout = cycle_object.turn_timeout
+            timeout = cycle_obj.turn_timeout
             while timeout > 0 and not turn_view.is_finished():
 
                 await turn_msg.edit(
                     embed=Embed(
-                        title=f"Round {cycle_object.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
+                        title=f"Round {cycle_obj.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
                         description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
                     ),
                     view=turn_view,
@@ -183,14 +184,14 @@ class AnimeCycle(commands.Cog):
                 timeout -= not is_last_player
 
                 # answered correctedly, so update leaderboard
-                if cycle_object.just_answered == 1:
-                    await leaderboard.edit(embed=cycle_object.leaderboard())
+                if cycle_obj.just_answered == 1:
+                    await leaderboard.edit(embed=cycle_obj.leaderboard())
 
                 # Skip: last player -> answer needs to be correct | not last player -> answer doesn't need to be correct
-                if (is_last_player and cycle_object.just_answered == 1) or (
-                    not is_last_player and cycle_object.just_answered
+                if (is_last_player and cycle_obj.just_answered == 1) or (
+                    not is_last_player and cycle_obj.just_answered
                 ):
-                    timeout = cycle_object.just_answered = 0
+                    timeout = cycle_obj.just_answered = 0
 
             turn_view.stop()
 
@@ -203,13 +204,13 @@ class AnimeCycle(commands.Cog):
                         color=Color.red(),
                     )
                 )
-                cycle_object.clean_up()
+                cycle_obj.clean_up()
                 return
 
-            cycle_object.advance_player()
+            cycle_obj.advance_player()
 
         await turn_msg.delete()
-        cycle_object.clean_up()
+        cycle_obj.clean_up()
 
     @cycle.command(description="Pick an anime for your assigned player")
     async def pick(self, ctx: ApplicationContext, anime_id: int):
@@ -324,4 +325,4 @@ class AnimeCycle(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(AnimeCycle(bot))
+    bot.add_cog(AniCycle(bot))

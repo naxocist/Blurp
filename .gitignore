@@ -9,4 +9,5 @@ Include
 Lib
 Scripts
 logs
-sandbox.py
+flask_session
+sandbox
