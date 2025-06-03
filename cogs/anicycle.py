@@ -10,7 +10,7 @@ from utils.apis.jikanv4 import get_anime_by_id
 from utils.apis.nekosbest import get_img
 
 # customs - UI & state
-from utils.customs.anicycle_classes import InviteView, TurnView, CycleClass
+from utils.customs.anicycle_comps import InviteView, TurnView, CycleClass
 from utils.customs.commands import count_down_timer
 from utils.customs.game_state import players_games
 
