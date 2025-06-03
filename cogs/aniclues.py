@@ -36,8 +36,8 @@ class AniClues(commands.Cog):
         """
         Clues revelation order
         - General Info
-            genres / themes
-            status
+            genres
+            themes
             season, year
             rating
             studios
@@ -76,7 +76,7 @@ class AniClues(commands.Cog):
         anime = anime.data
 
         clue_obj = CluesClass(anime)
-        await clue_obj.get_synopsis_clue()
+        await clue_obj.fetch_clues()
 
         await ctx.respond(
             embed=Embed(
@@ -122,7 +122,10 @@ class AniClues(commands.Cog):
 
             nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
             if crr_clue_embed != nxt_clue_embed:
-                await ctx.send(embed=nxt_clue_embed)
+                await ctx.send(
+                    file=clue_obj.file if clue_obj.crr_clue_idx == 4 else None,
+                    embed=nxt_clue_embed,
+                )
                 crr_clue_embed = nxt_clue_embed
 
         await timer_msg.delete()

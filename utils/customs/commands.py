@@ -1,3 +1,9 @@
+import cv2
+import numpy as np
+import requests
+from PIL import Image
+from io import BytesIO
+
 from typing import Optional, Callable
 from discord import ApplicationContext, Embed, Color
 import asyncio
@@ -35,3 +41,26 @@ async def count_down_timer(
             if timeout > 0:
                 await timer_msg.delete()
             return
+
+
+def blur_image_from_url(url, blur_strength=25):
+    # Download image
+    response = requests.get(url)
+    image = Image.open(BytesIO(response.content)).convert("RGB")
+
+    # Convert to OpenCV format (numpy array)
+    img_cv = np.array(image)
+    img_cv = cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR)
+
+    # Apply Gaussian blur
+    blurred_cv = cv2.GaussianBlur(img_cv, (blur_strength | 1, blur_strength | 1), 0)
+
+    # Convert back to PIL Image
+    blurred_rgb = cv2.cvtColor(blurred_cv, cv2.COLOR_BGR2RGB)
+    result_image = Image.fromarray(blurred_rgb)
+
+    # Save to memory
+    buffer = BytesIO()
+    result_image.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer
