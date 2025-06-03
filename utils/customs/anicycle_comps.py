@@ -1,10 +1,10 @@
-from typing import List
-
 import discord
 from discord import Interaction, Member, Embed, Color
 from discord.ui import View, Button
 
+from typing import List
 from dotmap import DotMap
+import asyncio
 import random
 
 from .game_state import minigame_objects, players_games
@@ -95,6 +95,8 @@ class CycleClass:
         self.just_answered = (
             0  # 0: not yet answered, 1: answered (wrong), 2: answered (right)
         )
+        self.answered_event = asyncio.Event()
+
         self.active_player_index = 0
         self.phase_index = 0
         self.round = 1

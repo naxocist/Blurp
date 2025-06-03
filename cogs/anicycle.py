@@ -141,7 +141,7 @@ class AniCycle(commands.Cog):
 
         # after pick delay, let players look at the sent info
         await count_down_timer(
-            ctx, cycle_obj.delay_after_pick, title_prefix="Game Start In:"
+            ctx, cycle_obj.delay_after_pick, title_prefix="Game start in:"
         )
 
         # Initial turn setup
@@ -180,8 +180,16 @@ class AniCycle(commands.Cog):
                     view=turn_view,
                 )
 
-                await asyncio.sleep(1)
-                timeout -= not is_last_player
+                done, pending = await asyncio.wait(
+                    [
+                        asyncio.create_task(asyncio.sleep(1)),
+                        asyncio.create_task(cycle_obj.answered_event.wait()),
+                    ],
+                    return_when=asyncio.FIRST_COMPLETED,
+                )
+
+                if any(task.get_coro().__name__ == "sleep" for task in done):
+                    timeout -= not is_last_player
 
                 # answered correctedly, so update leaderboard
                 if cycle_obj.just_answered == 1:
@@ -320,6 +328,8 @@ class AniCycle(commands.Cog):
 
         embed.description = guessed
         answer_msg = await ctx.respond(embed=embed)
+        cycle_obj.answered_event.set()  # trigger answered flag
+
         msg = await answer_msg.original_response()
         await msg.delete(delay=5)
 

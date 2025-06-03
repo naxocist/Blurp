@@ -16,6 +16,9 @@ async def count_down_timer(
     check_done: Optional[Callable] = None,
 ):
 
+    if timeout <= 0:
+        raise "timeout must be positive value!"
+
     timer_msg = await ctx.send(embed=get_timer_embed(title_prefix, timeout))
     while timeout > 0:
         await asyncio.sleep(1)  # ping every 1s
@@ -23,12 +26,12 @@ async def count_down_timer(
 
         if timeout == 0:
             await timer_msg.delete()
+            return
+
         elif timeout % interval == 0 or timeout <= 5:
             await timer_msg.edit(embed=get_timer_embed(title_prefix, timeout))
 
         if check_done and check_done():
             if timeout > 0:
                 await timer_msg.delete()
-            break
-
-    await timer_msg.delete()
+            return

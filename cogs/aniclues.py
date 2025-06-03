@@ -91,19 +91,14 @@ class AniClues(commands.Cog):
 
         while timer > 0:
 
-            done, pending = await asyncio.wait(
+            await asyncio.wait(
                 [
                     asyncio.create_task(asyncio.sleep(1)),
                     asyncio.create_task(clue_obj.answered_event.wait()),
                 ],
                 return_when=asyncio.FIRST_COMPLETED,
             )
-
             clue_obj.answered_event.clear()
-
-            # Only decrement time if 1 second passed (not interrupted early)
-            if any(task.get_coro().__name__ == "sleep" for task in done):
-                timer -= 1
 
             await timer_msg.edit(embed=get_timer_embed("Time left:", timer))
 
@@ -113,6 +108,9 @@ class AniClues(commands.Cog):
 
                 clue_obj.skip_clue(timer)
                 clue_obj.just_answered = 0
+            else:
+                # Only decrement time if 1 second passed (not interrupted early)
+                timer -= 1
 
             nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
             if crr_clue_embed != nxt_clue_embed:
