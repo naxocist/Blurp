@@ -2,6 +2,7 @@ from dotmap import DotMap
 from discord import Embed
 
 from typing import List
+import asyncio
 
 
 class CluesClass:
@@ -27,6 +28,8 @@ class CluesClass:
         ]
         # synopsis_clue = await get_synopsis_clue(anime)
         # genres = " ".join(f"`{genre.name}`" for genre in anime.genres)
+
+        self.answered_event = asyncio.Event()
 
     def get_new_clue_embed(self, timer: int) -> Embed:
         time_passed = CluesClass.timer - timer

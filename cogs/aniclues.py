@@ -46,6 +46,7 @@ class AniClues(commands.Cog):
             blured images
             title
         """
+        await ctx.defer()
 
         if ctx.author in players_games:
             await ctx.respond(
@@ -53,33 +54,31 @@ class AniClues(commands.Cog):
                 ephemeral=True,
             )
 
+        animes: List = await get_user_anime_list(mal_username)
+        if not animes or len(animes) == 0:
+            await ctx.followup.send(
+                embed=Embed(
+                    title="Error",
+                    description=f"Could not retrieve anime list for user `{mal_username}` or the list is empty. Please check the username.",
+                    color=Color.red(),
+                )
+            )
+            return
+
+        random_idx = randint(0, len(animes) - 1)
+        anime_id = animes[random_idx]["node"]["id"]
+
+        print("random id:", anime_id)
+        anime = await get_anime_by_id(anime_id)
+        anime = anime.data
+
         await ctx.respond(
             embed=Embed(
                 title="Anime Clues initialized!",
-                description=f"You will be guessing a random anime from `[{mal_username}](https://myanimelist.net/profile/{mal_username})`!\n As clues are gradually revealed...",
+                description=f"You will be guessing a random anime from [{mal_username}](https://myanimelist.net/profile/{mal_username})!\n As clues are gradually revealed...",
                 color=Color.green(),
             )
         )
-
-        anime = None
-        async with ctx.channel.typing():
-            animes: List = await get_user_anime_list(mal_username)
-            if not animes or len(animes) == 0:
-                await ctx.followup.send(
-                    embed=Embed(
-                        title="Error",
-                        description=f"Could not retrieve anime list for user `{mal_username}` or the list is empty. Please check the username.",
-                        color=Color.red(),
-                    )
-                )
-                return
-
-            random_idx = randint(0, len(animes) - 1)
-            anime_id = animes[random_idx]["node"]["id"]
-
-            print("random id:", anime_id)
-            anime = await get_anime_by_id(anime_id)
-            anime = anime.data
 
         clue_obj = CluesClass(anime)
         minigame_objects.append(clue_obj)
@@ -91,12 +90,22 @@ class AniClues(commands.Cog):
         await ctx.send(embed=crr_clue_embed)
 
         while timer > 0:
-            await asyncio.sleep(1)
-            timer -= 1
+
+            done, pending = await asyncio.wait(
+                [
+                    asyncio.create_task(asyncio.sleep(1)),
+                    asyncio.create_task(clue_obj.answered_event.wait()),
+                ],
+                return_when=asyncio.FIRST_COMPLETED,
+            )
+
+            clue_obj.answered_event.clear()
+
+            # Only decrement time if 1 second passed (not interrupted early)
+            if any(task.get_coro().__name__ == "sleep" for task in done):
+                timer -= 1
 
             await timer_msg.edit(embed=get_timer_embed("Time left:", timer))
-
-            nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
 
             if clue_obj.just_answered:
                 if clue_obj.just_answered == 2:  # player answered correctly
@@ -105,6 +114,7 @@ class AniClues(commands.Cog):
                 clue_obj.skip_clue(timer)
                 clue_obj.just_answered = 0
 
+            nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
             if crr_clue_embed != nxt_clue_embed:
                 await ctx.send(embed=nxt_clue_embed)
                 crr_clue_embed = nxt_clue_embed
@@ -134,6 +144,8 @@ class AniClues(commands.Cog):
                 f"Nah, it's not quite right. Revealing next clue...",
             )
             clues_obj.just_answered = 1
+
+        clues_obj.answered_event.set()  # trigger answered flag
 
 
 def setup(bot):

@@ -24,7 +24,6 @@ async def get_user_anime_list(mal_username: str) -> List:
             res = await loop.run_in_executor(None, req_func)
 
             if res.status_code != 200:
-                print(res.status_code)
                 return None
 
             res = res.json()
