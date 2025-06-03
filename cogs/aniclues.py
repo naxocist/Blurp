@@ -26,10 +26,12 @@ class AniClues(commands.Cog):
         self.bot: Bot = bot
 
     clues = discord.SlashCommandGroup(
-        "clues", "Guessing random anime minigame based on clues", guild_ids=guild_ids
+        "clues",
+        "Guessing random anime from a MAL profile minigame based on clues",
+        guild_ids=guild_ids,
     )
 
-    @clues.command(description="start guessing random anime from your MAL profile!")
+    @clues.command(description="start guessing random anime from given MAL profile!")
     async def init(self, ctx: ApplicationContext, mal_username: str):
         """
         Clues revelation order
@@ -53,6 +55,7 @@ class AniClues(commands.Cog):
                 "You are currently in other minigame! Finish that first...",
                 ephemeral=True,
             )
+            return
 
         animes: List = await get_user_anime_list(mal_username)
         if not animes or len(animes) == 0:
@@ -72,6 +75,9 @@ class AniClues(commands.Cog):
         anime = await get_anime_by_id(anime_id)
         anime = anime.data
 
+        clue_obj = CluesClass(anime)
+        await clue_obj.get_synopsis_clue()
+
         await ctx.respond(
             embed=Embed(
                 title="Anime Clues initialized!",
@@ -80,7 +86,6 @@ class AniClues(commands.Cog):
             )
         )
 
-        clue_obj = CluesClass(anime)
         minigame_objects.append(clue_obj)
         players_games[ctx.author] = clue_obj
 
@@ -100,17 +105,20 @@ class AniClues(commands.Cog):
             )
             clue_obj.answered_event.clear()
 
-            await timer_msg.edit(embed=get_timer_embed("Time left:", timer))
-
             if clue_obj.just_answered:
-                if clue_obj.just_answered == 2:  # player answered correctly
-                    return
+                if clue_obj.just_answered == 2:
+                    # correct answer
+                    break
 
-                clue_obj.skip_clue(timer)
+                # incorrect answer
+                clue_obj.skip_clue()
                 clue_obj.just_answered = 0
             else:
                 # Only decrement time if 1 second passed (not interrupted early)
                 timer -= 1
+
+            if timer % 5 == 0 or timer <= 5:
+                await timer_msg.edit(embed=get_timer_embed("Time left:", timer))
 
             nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
             if crr_clue_embed != nxt_clue_embed:
@@ -119,19 +127,25 @@ class AniClues(commands.Cog):
 
         await timer_msg.delete()
 
+        minigame_objects.remove(clue_obj)
+        players_games.pop(ctx.author)
+
     @clues.command(description="submit your guess!")
     async def answer(self, ctx: ApplicationContext, anime_id: int):
         member: Member = ctx.author
-        clues_obj: CluesClass = players_games.get(member)
+        clues_obj = players_games.get(member)
 
         if not clues_obj:
-            await ctx.respond(f"You are not in any aniclues game!", ephemeral=True)
+            await ctx.respond(f"You are not in any minigame!", ephemeral=True)
             return
+
+        if not isinstance(clues_obj, CluesClass):
+            await ctx.respond("Finish other minigame first...", ephemeral=True)
 
         anime = clues_obj.anime
         if anime_id == anime.mal_id:
             await ctx.respond(
-                f"{ctx.author.mention} is correct!",
+                f"You are correct!, clue(s) used {clues_obj.crr_clue_idx + 1}",
                 embed=Embed(
                     title=anime.title, url=anime.url, image=anime.images.jpg.image_url
                 ),
