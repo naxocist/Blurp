@@ -1,6 +1,6 @@
 import discord
 from discord.ext import commands
-from discord import ApplicationContext, Embed, Color, Bot
+from discord import ApplicationContext, Embed, Color, Bot, Member
 
 import asyncio
 from typing import List
@@ -75,8 +75,9 @@ class AniClues(commands.Cog):
                 return
 
             random_idx = randint(0, len(animes) - 1)
-            anime_id = animes[random_idx]["anime_id"]
+            anime_id = animes[random_idx]["node"]["id"]
 
+            print("random id:", anime_id)
             anime = await get_anime_by_id(anime_id)
             anime = anime.data
 
@@ -93,10 +94,17 @@ class AniClues(commands.Cog):
             await asyncio.sleep(1)
             timer -= 1
 
-            # if timer % 5 == 0 or timer <= 5:
             await timer_msg.edit(embed=get_timer_embed("Time left:", timer))
 
             nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
+
+            if clue_obj.just_answered:
+                if clue_obj.just_answered == 2:  # player answered correctly
+                    return
+
+                clue_obj.skip_clue(timer)
+                clue_obj.just_answered = 0
+
             if crr_clue_embed != nxt_clue_embed:
                 await ctx.send(embed=nxt_clue_embed)
                 crr_clue_embed = nxt_clue_embed
@@ -105,7 +113,27 @@ class AniClues(commands.Cog):
 
     @clues.command(description="submit your guess!")
     async def answer(self, ctx: ApplicationContext, anime_id: int):
-        pass
+        member: Member = ctx.author
+        clues_obj: CluesClass = players_games.get(member)
+
+        if not clues_obj:
+            await ctx.respond(f"You are not in any aniclues game!", ephemeral=True)
+            return
+
+        anime = clues_obj.anime
+        if anime_id == anime.mal_id:
+            await ctx.respond(
+                f"{ctx.author.mention} is correct!",
+                embed=Embed(
+                    title=anime.title, url=anime.url, image=anime.images.jpg.image_url
+                ),
+            )
+            clues_obj.just_answered = 2  # answered correctly
+        else:
+            await ctx.respond(
+                f"Nah, it's not quite right. Revealing next clue...",
+            )
+            clues_obj.just_answered = 1
 
 
 def setup(bot):

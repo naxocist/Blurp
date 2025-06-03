@@ -2,18 +2,22 @@ from dotmap import DotMap
 from discord import Embed
 
 from typing import List
-from bisect import bisect_right
 
 
 class CluesClass:
     clues_embed = []
-    clues_reveal_after: List[int] = [0, 5, 5, 5]
+    clues_reveal_after: List[int] = [0, 10, 5, 10]
     delay = 20
     timer = sum(clues_reveal_after) + delay
 
     def __init__(self, anime: DotMap):
         self.crr_clue_idx: int = 0
         self.anime = anime
+        self.just_answered = (
+            0  # 0: not yet answered, 1: answered (wrong), 2: answered (right)
+        )
+        self.prv_clue_time = 0
+        self.skip = False
 
         CluesClass.clues_embed = [
             Embed(title="Clue #1"),
@@ -24,20 +28,21 @@ class CluesClass:
         # synopsis_clue = await get_synopsis_clue(anime)
         # genres = " ".join(f"`{genre.name}`" for genre in anime.genres)
 
-        self.pref_clues_reveal_after: List[int] = []
-        for i, clue_reveal_after in enumerate(CluesClass.clues_reveal_after):
-            pref = clue_reveal_after
-            if i > 0:
-                pref += self.pref_clues_reveal_after[i - 1]
-
-            self.pref_clues_reveal_after.append(pref)
-
-    def get_new_clue_embed(self, timer: int):
+    def get_new_clue_embed(self, timer: int) -> Embed:
         time_passed = CluesClass.timer - timer
+        nxt_clue_idx = self.crr_clue_idx + 1
 
-        nxt_clue_idx = bisect_right(self.pref_clues_reveal_after, time_passed) - 1
-        print(time_passed, nxt_clue_idx)
-        if nxt_clue_idx == -1 or nxt_clue_idx == self.crr_clue_idx:
+        time_after_prv_clue = time_passed - self.prv_clue_time
+        if (
+            nxt_clue_idx == len(CluesClass.clues_embed)
+            or time_after_prv_clue != CluesClass.clues_reveal_after[nxt_clue_idx]
+        ) and not self.skip:
             return CluesClass.clues_embed[self.crr_clue_idx]
 
+        self.skip = False
+        self.crr_clue_idx += 1
+        self.prv_clue_time = time_passed
         return CluesClass.clues_embed[nxt_clue_idx]
+
+    def skip_clue(self, timer: int):
+        self.skip = True

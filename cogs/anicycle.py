@@ -219,13 +219,13 @@ class AniCycle(commands.Cog):
         Pick an anime for assigned player using MAL anime id.
         """
         member: Member = ctx.author
-        cycle_object: CycleClass = players_games.get(member)
+        cycle_obj: CycleClass = players_games.get(member)
 
-        if not cycle_object:
+        if not cycle_obj:
             await ctx.respond(f"You are not in any anime cycle game.", ephemeral=True)
             return
 
-        if cycle_object.current_phase() != "picking":
+        if cycle_obj.current_phase() != "picking":
             await ctx.respond(f"The game is not in the picking phase!", ephemeral=True)
             return
 
@@ -241,12 +241,12 @@ class AniCycle(commands.Cog):
             result.data.images.jpg.image_url,
         )
 
-        target: Member = cycle_object.targets[
+        target: Member = cycle_obj.targets[
             member
         ]  # get member object of assigned player
 
         # assigned that player a dotmapped compact anime info
-        cycle_object.player_animes[target] = DotMap(
+        cycle_obj.player_animes[target] = DotMap(
             dict(title=title, url=url, mal_id=mal_id)
         )
 
@@ -257,7 +257,7 @@ class AniCycle(commands.Cog):
         )
         await ctx.respond(embed=pick_embed, ephemeral=True)
 
-        req: int = len(cycle_object.player_animes) - cycle_object.player_count
+        req: int = len(cycle_obj.player_animes) - cycle_obj.player_count
         if req > 0:
             await ctx.send(
                 embed=Embed(
@@ -273,17 +273,17 @@ class AniCycle(commands.Cog):
         Member will use this command to submit their answer
         """
         member: Member = ctx.author
-        cycle_object: CycleClass = players_games.get(member)
+        cycle_obj: CycleClass = players_games.get(member)
 
-        if not cycle_object:
+        if not cycle_obj:
             await ctx.respond(f"You are not in any anime cycle game.", ephemeral=True)
             return
 
-        if cycle_object.current_phase() != "turns":
+        if cycle_obj.current_phase() != "turns":
             await ctx.respond(f"The game is not in the turns phase!", ephemeral=True)
             return
 
-        if member != cycle_object.current_player():
+        if member != cycle_obj.current_player():
             await ctx.respond(f"It's not your turn yet!", ephemeral=True)
             return
 
@@ -299,7 +299,7 @@ class AniCycle(commands.Cog):
             result.data.images.jpg.image_url,
         )
 
-        target: DotMap = cycle_object.player_animes[
+        target: DotMap = cycle_obj.player_animes[
             member
         ]  # retrieve player's assigned anime
 
@@ -308,13 +308,13 @@ class AniCycle(commands.Cog):
         embed = Embed(image=image_url)
 
         if correct:
-            cycle_object.just_answered = 1
+            cycle_obj.just_answered = 1
             guessed += "**Correct!** 🤓"
             embed.color = Color.brand_green()
-            cycle_object.add_done(member)
-            cycle_object.turn_done[member] = cycle_object.round
+            cycle_obj.add_done(member)
+            cycle_obj.turn_done[member] = cycle_obj.round
         else:
-            cycle_object.just_answered = 2
+            cycle_obj.just_answered = 2
             guessed += "**Not quite right... Try again!** 🥹"
             embed.color = Color.brand_red()
 
