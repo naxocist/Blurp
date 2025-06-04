@@ -39,10 +39,13 @@ class AniClues(commands.Cog):
             genres
             themes
             season, year
-            rating
-            studios
+
             episodes num
             MAL score
+            ranked
+
+            studios
+            producers
         - Specifics
             synopsis
             blured images
@@ -76,13 +79,13 @@ class AniClues(commands.Cog):
         anime = anime.data
 
         clue_obj = CluesClass(anime)
-        await clue_obj.fetch_clues()
+        await clue_obj.setup_clues()
 
         await ctx.respond(
             embed=Embed(
                 title="Anime Clues initialized!",
-                description=f"You will be guessing a random anime from [{mal_username}](https://myanimelist.net/profile/{mal_username})!\n As clues are gradually revealed...",
-                color=Color.green(),
+                description=f"You will be guessing a random anime from [{mal_username}](https://myanimelist.net/profile/{mal_username}) profile!\n As clues are gradually revealed...",
+                color=Color.blurple(),
             )
         )
 
@@ -130,35 +133,50 @@ class AniClues(commands.Cog):
 
         await timer_msg.delete()
 
+        if timer == 0:
+            await ctx.send(
+                embed=Embed(
+                    title=anime.title,
+                    description="This is the answer... Try again next time!",
+                    url=anime.url,
+                    image=anime.images.jpg.image_url,
+                    color=Color.brand_red(),
+                )
+            )
+
         minigame_objects.remove(clue_obj)
         players_games.pop(ctx.author)
 
     @clues.command(description="submit your guess!")
     async def answer(self, ctx: ApplicationContext, anime_id: int):
         member: Member = ctx.author
-        clues_obj = players_games.get(member)
+        clues_obj: CluesClass = players_games.get(member)
 
         if not clues_obj:
             await ctx.respond(f"You are not in any minigame!", ephemeral=True)
             return
 
         if not isinstance(clues_obj, CluesClass):
-            await ctx.respond("Finish other minigame first...", ephemeral=True)
+            await ctx.respond("You are not in aniclues minigame...", ephemeral=True)
 
         anime = clues_obj.anime
         if anime_id == anime.mal_id:
             await ctx.respond(
-                f"You are correct!, clue(s) used {clues_obj.crr_clue_idx + 1}",
+                f"You're right!, used {clues_obj.crr_clue_idx + 1} clue(s)",
                 embed=Embed(
-                    title=anime.title, url=anime.url, image=anime.images.jpg.image_url
+                    title=anime.title,
+                    url=anime.url,
+                    image=anime.images.jpg.image_url,
+                    color=Color.green(),
                 ),
             )
-            clues_obj.just_answered = 2  # answered correctly
+            clues_obj.just_answered = 2  # correct answer
         else:
+            answered_anime = (await get_anime_by_id(anime_id)).data
             await ctx.respond(
-                f"Nah, it's not quite right. Revealing next clue...",
+                f"Nah, [{answered_anime.title}]({answered_anime.url}) is not quite right. Revealing next clue...",
             )
-            clues_obj.just_answered = 1
+            clues_obj.just_answered = 1  # incorrect answer
 
         clues_obj.answered_event.set()  # trigger answered flag
 

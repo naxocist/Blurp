@@ -1,5 +1,6 @@
 from dotmap import DotMap
 from discord import Embed
+from discord import Color
 import discord
 
 from typing import List
@@ -11,7 +12,7 @@ from utils.customs.commands import blur_image_from_url
 
 class CluesClass:
     clues_embed = []
-    clues_reveal_after: List[int] = [0, 5, 5, 5, 5]
+    clues_reveal_after: List[int] = [0, 20, 10, 10, 30]
     delay = 20
     timer = sum(clues_reveal_after) + delay
 
@@ -23,7 +24,11 @@ class CluesClass:
         )
         self.prv_clue_time = 0
         self.skip = False
+        self.answered_event = asyncio.Event()
 
+    async def setup_clues(self):
+        description = "use `/clues answer <anime_id>` to answer!"
+        anime = self.anime
         genres = " ".join(f"`{genre.name}`" for genre in anime.genres) or "N/A"
         themes = " ".join(f"`{theme.name}`" for theme in anime.themes) or "`N/A`"
         studios = " ".join(f"`{studio.name}`" for studio in anime.studios) or "N/A"
@@ -36,9 +41,18 @@ class CluesClass:
         score = f"`{anime.score}`/10" or "`N/A`"
         ranked = f"#{anime.rank}" or "N/A"
 
+        synopsis_clue = await get_synopsis_clue(self.anime)
+        image_url = self.anime.images.jpg.image_url
+        file_buffer = blur_image_from_url(image_url, 50)
+        self.file = discord.File(fp=file_buffer, filename="blurred.png")
+
         CluesClass.clues_embed = [
             # Clue #1: Genres, Themes, Season/Year
-            Embed(title="Clue #1: Just basic information")
+            Embed(
+                title="Clue #1: Basic information",
+                color=Color.red(),
+                description=description,
+            )
             .add_field(name="Genres", value=genres, inline=True)
             .add_field(name="Themes", value=themes, inline=True)
             .add_field(
@@ -47,33 +61,35 @@ class CluesClass:
                 inline=True,
             ),
             # Clue #2: Eps, Score, Ranked
-            Embed(title="Clue #2: Maybe some stats will help")
+            Embed(
+                title="Clue #2: Do some stats help?",
+                color=Color.red(),
+                description=description,
+            )
             .add_field(name="Episodes", value=f"`{episodes}` episodes", inline=True)
             .add_field(name="Score", value=score, inline=True)
             .add_field(name=f"Ranked: `{ranked}`", value="", inline=True),
             # Clue #3: Studio, Producers
-            Embed(title="Clue #3: Who created this!?")
+            Embed(
+                title="Clue #3: Who created this!?",
+                color=Color.orange(),
+                description=description,
+            )
             .add_field(name="Studios", value=studios)
             .add_field(name="Producers", value=producers),
             # Clue #4: Synopsis
-            Embed(title="Clue #4: You should recognize this"),
+            Embed(
+                title="Clue #4: You should recognize this",
+                color=Color.green(),
+                description=description,
+            ).add_field(name="Summarized synopsis", value=synopsis_clue),
             # Clue #5: Image Cover
-            Embed(title="Clue #5: Okay..."),
+            Embed(
+                title="Clue #5: Okay...",
+                color=Color.green(),
+                description=description,
+            ).set_image(url="attachment://blurred.png"),
         ]
-
-        self.answered_event = asyncio.Event()
-
-    async def fetch_clues(self):
-        synopsis_clue = await get_synopsis_clue(self.anime)
-        CluesClass.clues_embed[3].add_field(
-            name="Summarized synopsis", value=synopsis_clue
-        )
-
-        image_url = self.anime.images.jpg.image_url
-        file_buffer = blur_image_from_url(image_url, 50)
-        self.file = discord.File(fp=file_buffer, filename="blurred.png")
-
-        CluesClass.clues_embed[4].set_image(url="attachment://blurred.png")
 
     def get_new_clue_embed(self, timer: int) -> Embed:
         time_passed = CluesClass.timer - timer

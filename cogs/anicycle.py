@@ -287,6 +287,10 @@ class AniCycle(commands.Cog):
             await ctx.respond(f"You are not in any anime cycle game.", ephemeral=True)
             return
 
+        if not isinstance(cycle_obj, CycleClass):
+            await ctx.respond(f"You are not in anicycle minigame...", ephemeral=True)
+            return
+
         if cycle_obj.current_phase() != "turns":
             await ctx.respond(f"The game is not in the turns phase!", ephemeral=True)
             return
