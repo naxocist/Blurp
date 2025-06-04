@@ -14,10 +14,7 @@ from utils.customs.game_state import minigame_objects, players_games
 from utils.customs.aniclues_comps import CluesClass
 from utils.customs.commands import get_timer_embed
 
-# from credentials import guild_ids
-from credentials import NAXOCIST_GUILD_ID
-
-guild_ids = [NAXOCIST_GUILD_ID]
+from credentials import guild_ids
 
 
 class AniClues(commands.Cog):
