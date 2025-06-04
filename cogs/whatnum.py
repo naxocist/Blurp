@@ -3,7 +3,7 @@ from discord import Bot, ApplicationContext, Embed, Color, Option
 from discord.ext import commands
 
 from utils.customs.game_state import minigame_objects, players_games
-from utils.customs.minigames_comps import BinarySearch
+from utils.customs.whatnum_comps import BinarySearch
 from credentials import NAXOCIST_GUILD_ID
 
 guild_ids = [NAXOCIST_GUILD_ID]
