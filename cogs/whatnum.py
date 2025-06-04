@@ -4,9 +4,7 @@ from discord.ext import commands
 
 from utils.customs.game_state import minigame_objects, players_games
 from utils.customs.whatnum_comps import BinarySearch
-from credentials import NAXOCIST_GUILD_ID
-
-guild_ids = [NAXOCIST_GUILD_ID]
+from credentials import guild_ids
 
 
 class MiniGames(commands.Cog):
@@ -70,12 +68,14 @@ class MiniGames(commands.Cog):
         bs_obj.guess_cnt += 1
         guess_left = bs_obj.expected_guess_cnt - bs_obj.guess_cnt
 
-        msg = (
-            f"Correct! You've guessed **{bs_obj.guess_cnt}** time(s) to get to {target}"
-        )
+        msg = f"That's correct🤓 You've guessed **{bs_obj.guess_cnt}** time(s) to get to {target}"
 
         if guess == target:
-            await ctx.respond(msg)
+            await ctx.respond(
+                embed=Embed(title="Congrats!", description=msg, color=Color.green())
+            )
+            minigame_objects.remove(bs_obj)
+            players_games.pop(member, None)
             return
 
         if guess > target:
@@ -83,16 +83,42 @@ class MiniGames(commands.Cog):
         elif guess < target:
             msg = f"{guess} is too small... {guess_left} {"tries" if guess_left > 1 else "try"} left"
 
-        if bs_obj.guess_cnt > bs_obj.expected_guess_cnt:
+        if guess_left == 0:
             await ctx.respond(
                 embed=Embed(
-                    title="Failed: run out of tries",
-                    description=f"the number was **{target}**\nYou're not being optimal... You should've guessed it by now",
+                    title="Failed",
+                    description=f"The number was **{target}**\nYou're not being optimal... You should've guessed it by now\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
+                    color=Color.red(),
                 )
             )
             return
 
         await ctx.respond(msg)
+
+    @binary_search.command(description="For real!? plz don't")
+    async def giveup(self, ctx: ApplicationContext):
+        member = ctx.author
+        bs_obj: BinarySearch = players_games.get(member)
+
+        if not bs_obj:
+            await ctx.respond(f"You can't give up on nothing...", ephemeral=True)
+            return
+
+        if not isinstance(bs_obj, BinarySearch):
+            await ctx.respond(
+                "You are not in a guess number minigame...", ephemeral=True
+            )
+
+        target = bs_obj.target
+        await ctx.respond(
+            embed=Embed(
+                title="Gave up 🥲",
+                description=f"The number was **{target}**\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
+                color=Color.red(),
+            )
+        )
+        minigame_objects.remove(bs_obj)
+        players_games.pop(member, None)
 
 
 def setup(bot):
