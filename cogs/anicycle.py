@@ -171,16 +171,6 @@ class AniCycle(commands.Cog):
 
             timeout = cycle_obj.turn_timeout
             while timeout > 0:
-
-                if timeout % 5 == 0 or timeout <= 10:
-                    await turn_msg.edit(
-                        embed=Embed(
-                            title=f"Round {cycle_obj.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
-                            description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
-                        ),
-                        view=turn_view,
-                    )
-
                 sleep_task = asyncio.create_task(asyncio.sleep(1))
                 answered_task = asyncio.create_task(cycle_obj.answered_event.wait())
                 view_task = asyncio.create_task(turn_view.wait())
@@ -190,19 +180,29 @@ class AniCycle(commands.Cog):
                     return_when=asyncio.FIRST_COMPLETED,
                 )
 
+                # triggered a button
                 if view_task in done:
                     break
 
-                cycle_obj.answered_event.clear()
-
                 if answered_task in done:
+                    cycle_obj.answered_event.clear()
                     # answered correctedly, so update leaderboard
                     if cycle_obj.just_answered == 1:
                         await leaderboard.edit(embed=cycle_obj.leaderboard())
 
+                    # skip turn if answer
                     break
                 elif not is_last_player:
                     timeout -= 1
+
+                if timeout % 5 == 0 or timeout <= 10:
+                    await turn_msg.edit(
+                        embed=Embed(
+                            title=f"Round {cycle_obj.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
+                            description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+                        ),
+                        view=turn_view,
+                    )
 
             # Early terminate by a member
             if turn_view.is_terminated:

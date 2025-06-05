@@ -96,25 +96,22 @@ class AniClues(commands.Cog):
 
         while timer > 0:
 
-            await asyncio.wait(
-                [
-                    asyncio.create_task(asyncio.sleep(1)),
-                    asyncio.create_task(clue_obj.answered_event.wait()),
-                ],
+            sleep_task = asyncio.create_task(asyncio.sleep(1))
+            answered_task = asyncio.create_task(clue_obj.answered_event.wait())
+            done, pending = await asyncio.wait(
+                [sleep_task, answered_task],
                 return_when=asyncio.FIRST_COMPLETED,
             )
-            clue_obj.answered_event.clear()
 
-            if clue_obj.just_answered:
+            if answered_task in done:
+                clue_obj.answered_event.clear()
+                # correct answer
                 if clue_obj.just_answered == 2:
-                    # correct answer
                     break
-
                 # incorrect answer
                 clue_obj.skip_clue()
                 clue_obj.just_answered = 0
             else:
-                # Only decrement time if 1 second passed (not interrupted early)
                 timer -= 1
 
             if timer % 5 == 0 or timer <= 5:
