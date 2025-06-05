@@ -1,8 +1,8 @@
 from dotmap import DotMap
 
-import discord
 from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Bot
+import discord
 import asyncio
 
 # apis
@@ -10,7 +10,7 @@ from utils.apis.jikanv4 import get_anime_by_id
 from utils.apis.nekosbest import get_img
 
 # customs - UI & state
-from utils.customs.anicycle_comps import InviteView, TurnView, CycleClass
+from utils.customs.anicycle_comps import InviteView, TurnView, PickView, CycleClass
 from utils.customs.commands import count_down_timer
 from utils.customs.game_state import players_games
 
@@ -97,30 +97,60 @@ class AniCycle(commands.Cog):
 
         # * PICKING: each players pick an anime for their target using /pick command
         cycle_obj.advance_phase()
-        picking_msg = await ctx.send(
+
+        pick_view = PickView()
+        pick_msg = await ctx.send(
             embed=Embed(
                 title="use `/cycle pick <anime_id>` to pick an anime for your pair",
                 description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only\nExample: https://myanimelist.net/anime/9776/A-Channel\n`9776` is the anime id",
                 color=Color.yellow(),
-            )
+            ),
+            view=pick_view,
         )
 
-        all_picked = lambda: len(cycle_obj.player_animes) == cycle_obj.player_count
-        await count_down_timer(ctx, CycleClass.pick_timeout, check_done=all_picked)
+        # assigned pick asyncio.Event to every player
+        for player in cycle_obj.players:
+            cycle_obj.players_pick_event[player] = asyncio.Event()
+            # TODO: Add picking interface
 
-        await picking_msg.delete()
+        async def wait_for_player(player: Member):
+            if player.bot:
+                return
+            await cycle_obj.players_pick_event[player].wait()
 
-        # someone didn't pick an anime in time
-        if not all_picked:
+        async def wait_for_all_players():
+            await asyncio.gather(
+                *(wait_for_player(player) for player in cycle_obj.players)
+            )
+
+        player_group_task = asyncio.create_task(wait_for_all_players())
+        terminate_task = asyncio.create_task(pick_view.wait())
+
+        done, pending = await asyncio.wait(
+            [player_group_task, terminate_task],
+            return_when=asyncio.FIRST_COMPLETED,
+        )
+
+        if terminate_task in done:
+            # Termination happened first: cancel all player tasks
+            player_group_task.cancel()
+
+            pick_view.disable_all_items()
+            await pick_msg.edit(view=pick_view)
             await ctx.send(
                 embed=Embed(
-                    title="Anime Cycle game cancelled",
-                    description="Not all players picked an anime in time.",
+                    description=f"**{pick_view.terminator.mention} terminated the game...**",
                     color=Color.red(),
                 )
             )
             cycle_obj.clean_up()
             return
+        else:
+            terminate_task.cancel()
+
+        pick_view.disable_all_items()
+        await pick_msg.edit(view=pick_view)
+        await pick_msg.delete()
 
         # DM everyone about assigned anime info
         for player in cycle_obj.players:
@@ -170,7 +200,16 @@ class AniCycle(commands.Cog):
             turn_view = TurnView(is_last_player=is_last_player)
 
             timeout = cycle_obj.turn_timeout
+
             while timeout > 0:
+                if timeout and (timeout % 5 == 0 or timeout <= 10):
+                    await turn_msg.edit(
+                        embed=Embed(
+                            title=f"Round {cycle_obj.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
+                            description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
+                        ),
+                        view=turn_view,
+                    )
                 sleep_task = asyncio.create_task(asyncio.sleep(1))
                 answered_task = asyncio.create_task(cycle_obj.answered_event.wait())
                 view_task = asyncio.create_task(turn_view.wait())
@@ -194,15 +233,6 @@ class AniCycle(commands.Cog):
                     break
                 elif not is_last_player:
                     timeout -= 1
-
-                if timeout % 5 == 0 or timeout <= 10:
-                    await turn_msg.edit(
-                        embed=Embed(
-                            title=f"Round {cycle_obj.round} | ⏱︎ Time left: {str(timeout) + " secs" if not is_last_player else "-"} | Players left: {player_left}",
-                            description=f"{current_player.mention}'s turn! Ask for some hints.\nWhen you're ready, use `/cycle answer <anime_id>` to submit your answer.",
-                        ),
-                        view=turn_view,
-                    )
 
             # Early terminate by a member
             if turn_view.is_terminated:
@@ -266,14 +296,8 @@ class AniCycle(commands.Cog):
         )
         await ctx.respond(embed=pick_embed, ephemeral=True)
 
-        req: int = len(cycle_obj.player_animes) - cycle_obj.player_count
-        if req > 0:
-            await ctx.send(
-                embed=Embed(
-                    description=f"There are {req} players who still need to pick an anime.",
-                    color=Color.yellow(),
-                )
-            )
+        # trigger pick event
+        cycle_obj.players_pick_event[member].set()
 
     @cycle.command(description="Submit your answer here!")
     async def answer(self, ctx: ApplicationContext, anime_id: int):

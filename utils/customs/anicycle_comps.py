@@ -73,6 +73,20 @@ class TurnView(View):
         self.stop()
 
 
+class PickView(View):
+    def __init__(self):
+        super().__init__()
+        self.is_terminated = False
+        self.terminator = None
+
+    @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
+    async def terminate(self, button: Button, interaction: Interaction):
+        await interaction.response.defer()
+        self.is_terminated = True
+        self.terminator = interaction.user
+        self.stop()
+
+
 class CycleClass:
     # time limit in seconds
     join_timeout = 20
@@ -91,6 +105,8 @@ class CycleClass:
         self.player_animes: dict[Member, DotMap] = {}
         self.player_count = 0
 
+        self.players_pick_event: dict[Member, asyncio.Event] = {}
+
         self.turn_done: dict[Member, int] = {}
         self.just_answered = (
             0  # 0: not yet answered, 1: answered (wrong), 2: answered (right)
@@ -105,7 +121,7 @@ class CycleClass:
     def add_player(self, player: Member):
         self.player_count += 1
         self.players.append(player)
-        players_games[player] = self  # store which game the player is in
+        players_games[player] = self
 
     # shuffle and find derangements of players, then assigned players to each other
     def random_targets(self):

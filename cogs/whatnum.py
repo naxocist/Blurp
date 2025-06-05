@@ -7,7 +7,7 @@ from utils.customs.whatnum_comps import BinarySearch
 from credentials import guild_ids
 
 
-class MiniGames(commands.Cog):
+class WhatNum(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
@@ -122,4 +122,4 @@ class MiniGames(commands.Cog):
 
 
 def setup(bot):
-    bot.add_cog(MiniGames(bot))
+    bot.add_cog(WhatNum(bot))
