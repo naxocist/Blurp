@@ -34,8 +34,8 @@ class MiniGames(commands.Cog):
             )
             return
 
-        if low > high:
-            await ctx.respond("low must <= high!", ephemeral=True)
+        if low >= high:
+            await ctx.respond("low must less than high!", ephemeral=True)
             return
 
         bs_obj = BinarySearch(low, high)
@@ -44,7 +44,7 @@ class MiniGames(commands.Cog):
 
         await ctx.respond(
             embed=Embed(
-                title=f"Guess a number between {bs_obj.low}-{bs_obj.high}",
+                title=f"Guess a number from {bs_obj.low} to {bs_obj.high}",
                 description=f"use `/whatnum guess <number>` to apply guess.\nI'll tell you whether your guess is less or greater than target number\n**You have {bs_obj.expected_guess_cnt} tries**",
                 color=Color.green(),
             )

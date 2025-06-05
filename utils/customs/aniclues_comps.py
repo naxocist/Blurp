@@ -12,7 +12,7 @@ from utils.customs.commands import blur_image_from_url
 
 class CluesClass:
     clues_embed = []
-    clues_reveal_after: List[int] = [0, 20, 10, 10, 30]
+    clues_reveal_after: List[int] = [0, 60, 60, 60, 60]
     delay = 20
     timer = sum(clues_reveal_after) + delay
 

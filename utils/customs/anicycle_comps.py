@@ -76,8 +76,8 @@ class TurnView(View):
 class CycleClass:
     # time limit in seconds
     join_timeout = 20
-    pick_timeout = 120
-    delay_after_pick = 20
+    pick_timeout = 180
+    delay_after_pick = 5
     turn_timeout = 60
 
     phases = ["lobby", "picking", "turns"]

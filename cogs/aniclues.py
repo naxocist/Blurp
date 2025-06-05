@@ -155,6 +155,7 @@ class AniClues(commands.Cog):
 
         if not isinstance(clues_obj, CluesClass):
             await ctx.respond("You are not in aniclues minigame...", ephemeral=True)
+            return
 
         anime = clues_obj.anime
         if anime_id == anime.mal_id:
