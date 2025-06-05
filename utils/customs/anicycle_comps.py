@@ -91,7 +91,7 @@ class CycleClass:
     # time limit in seconds
     join_timeout = 20
     pick_timeout = 180
-    delay_after_pick = 5
+    delay_before_turn = 10
     turn_timeout = 60
 
     phases = ["lobby", "picking", "turns"]
@@ -106,6 +106,7 @@ class CycleClass:
         self.player_count = 0
 
         self.players_pick_event: dict[Member, asyncio.Event] = {}
+        self.players_picked: List[Member] = []
 
         self.turn_done: dict[Member, int] = {}
         self.just_answered = (
@@ -122,6 +123,19 @@ class CycleClass:
         self.player_count += 1
         self.players.append(player)
         players_games[player] = self
+
+    def get_pick_status(self):
+        pick_status = ", ".join(
+            [
+                f"{player.mention} {'✅' if player in self.players_picked else '❌'}"
+                for player in self.players
+            ]
+        )
+        return pick_status
+
+    def add_picked(self, player: Member):
+        self.players_pick_event[player].set()
+        self.players_picked.append(player)
 
     # shuffle and find derangements of players, then assigned players to each other
     def random_targets(self):

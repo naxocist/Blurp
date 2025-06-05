@@ -1,8 +1,8 @@
-from dotmap import DotMap
-
 from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Bot
+from dotmap import DotMap
 import discord
+
 import asyncio
 
 # apis
@@ -53,16 +53,16 @@ class AniCycle(commands.Cog):
             )
             return
 
-        # DEMO player
-        cycle_obj.add_player(ctx.author)
-        cycle_obj.add_player(self.bot.user)
-        cycle_obj.player_animes[ctx.author] = DotMap(
-            dict(
-                title="Aharen-san wa Hakarenai Season 2",
-                url="https://myanimelist.net/anime/59466/Aharen-san_wa_Hakarenai_Season_2",
-                mal_id=59466,
-            )
-        )
+        # DEMO data
+        # cycle_obj.add_player(ctx.author)
+        # cycle_obj.add_player(self.bot.user)
+        # cycle_obj.player_animes[ctx.author] = DotMap(
+        #     dict(
+        #         title="Aharen-san wa Hakarenai Season 2",
+        #         url="https://myanimelist.net/anime/59466/Aharen-san_wa_Hakarenai_Season_2",
+        #         mal_id=59466,
+        #     )
+        # )
 
         # too few players to start the game
         if cycle_obj.player_count < 2:
@@ -99,24 +99,34 @@ class AniCycle(commands.Cog):
         cycle_obj.advance_phase()
 
         pick_view = PickView()
+
         pick_msg = await ctx.send(
             embed=Embed(
                 title="use `/cycle pick <anime_id>` to pick an anime for your pair",
-                description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only\nExample: https://myanimelist.net/anime/9776/A-Channel\n`9776` is the anime id",
+                description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only\nExample: https://myanimelist.net/anime/9776/A-Channel\n`9776` is the anime id\n"
+                + cycle_obj.get_pick_status(),
                 color=Color.yellow(),
             ),
             view=pick_view,
         )
 
-        # assigned pick asyncio.Event to every player
+        # assigned pick asyncio.Event to every player (listen for /cycle pick)
         for player in cycle_obj.players:
             cycle_obj.players_pick_event[player] = asyncio.Event()
-            # TODO: Add picking interface
 
         async def wait_for_player(player: Member):
             if player.bot:
                 return
             await cycle_obj.players_pick_event[player].wait()
+            # edit picking interface
+            await pick_msg.edit(
+                embed=Embed(
+                    title="use `/cycle pick <anime_id>` to pick an anime for your pair",
+                    description="You must find an anime id on [MyAnimeList](https://myanimelist.net/) only\nExample: https://myanimelist.net/anime/9776/A-Channel\n`9776` is the anime id\n"
+                    + cycle_obj.get_pick_status(),
+                    color=Color.yellow(),
+                ),
+            )
 
         async def wait_for_all_players():
             await asyncio.gather(
@@ -130,6 +140,11 @@ class AniCycle(commands.Cog):
             [player_group_task, terminate_task],
             return_when=asyncio.FIRST_COMPLETED,
         )
+
+        # clean up pending tasks
+        for task in pending:
+            task.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
 
         if terminate_task in done:
             # Termination happened first: cancel all player tasks
@@ -171,7 +186,7 @@ class AniCycle(commands.Cog):
 
         # after pick delay, let players look at the sent info
         await count_down_timer(
-            ctx, cycle_obj.delay_after_pick, title_prefix="Game start in:"
+            ctx, cycle_obj.delay_before_turn, title_prefix="Game start in:"
         )
 
         # Initial turn setup
@@ -297,7 +312,7 @@ class AniCycle(commands.Cog):
         await ctx.respond(embed=pick_embed, ephemeral=True)
 
         # trigger pick event
-        cycle_obj.players_pick_event[member].set()
+        cycle_obj.add_picked(member)
 
     @cycle.command(description="Submit your answer here!")
     async def answer(self, ctx: ApplicationContext, anime_id: int):
