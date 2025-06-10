@@ -89,12 +89,15 @@ class AniClues(commands.Cog):
         minigame_objects.append(clue_obj)
         players_games[ctx.author] = clue_obj
 
-        timer = clue_obj.timer
-        timer_msg = await ctx.send(embed=get_timer_embed("Time left:", timer))
-        crr_clue_embed = clue_obj.get_new_clue_embed(timer)
+        # Send first clue & timer
+        crr_clue_embed = clue_obj.get_current_embed()
         await ctx.send(embed=crr_clue_embed)
+        timer = clue_obj.timer
+        timer_msg = await ctx.send(
+            embed=get_timer_embed("Time until next clue: ", timer)
+        )
 
-        while timer > 0:
+        while True:
 
             sleep_task = asyncio.create_task(asyncio.sleep(1))
             answered_task = asyncio.create_task(clue_obj.answered_event.wait())
@@ -103,31 +106,58 @@ class AniClues(commands.Cog):
                 return_when=asyncio.FIRST_COMPLETED,
             )
 
-            if answered_task in done:
-                clue_obj.answered_event.clear()
-                # correct answer
-                if clue_obj.just_answered == 2:
-                    break
-                # incorrect answer
-                clue_obj.skip_clue()
+            async def next_clue_and_new_timer():
+                nonlocal timer, timer_msg
+                clue_obj.next_clue()
                 clue_obj.just_answered = 0
+
+                crr_clue_embed = clue_obj.get_current_embed()
+                await ctx.send(
+                    file=clue_obj.file if clue_obj.crr_clue_idx == 4 else None,
+                    embed=crr_clue_embed,
+                )
+
+                await timer_msg.delete()
+                timer = clue_obj.timer
+                timer_msg = await ctx.send(
+                    embed=get_timer_embed(
+                        f"{"Time until solution: " if clue_obj.is_last_clue() else "Time until next clue: "}",
+                        timer,
+                    )
+                )
+
+            if answered_task in done:
+
+                clue_obj.answered_event.clear()
+
+                # correct answer or out of clues, terminate
+                if clue_obj.just_answered == 2 or clue_obj.is_last_clue():
+                    await timer_msg.delete()
+                    break
+
+                # incorrect answer, send next clue & new timer
+                await next_clue_and_new_timer()
             else:
                 timer -= 1
 
+                # timeout,
+                if timer == 0:
+                    # out of clues
+                    if clue_obj.is_last_clue():
+                        await timer_msg.delete()
+                        break
+                    # send next clue & new timer
+                    await next_clue_and_new_timer()
+
             if timer % 5 == 0 or timer <= 5:
-                await timer_msg.edit(embed=get_timer_embed("Time left:", timer))
-
-            nxt_clue_embed = clue_obj.get_new_clue_embed(timer)
-            if crr_clue_embed != nxt_clue_embed:
-                await ctx.send(
-                    file=clue_obj.file if clue_obj.crr_clue_idx == 4 else None,
-                    embed=nxt_clue_embed,
+                await timer_msg.edit(
+                    embed=get_timer_embed(
+                        f"{"Time until solution: " if clue_obj.is_last_clue() else "Time until next clue: "}",
+                        timer,
+                    ),
                 )
-                crr_clue_embed = nxt_clue_embed
 
-        await timer_msg.delete()
-
-        if timer == 0:
+        if clue_obj.is_last_clue():
             await ctx.send(
                 embed=Embed(
                     title=anime.title,
@@ -167,7 +197,12 @@ class AniClues(commands.Cog):
             )
             clues_obj.just_answered = 2  # correct answer
         else:
-            answered_anime = (await get_anime_by_id(anime_id)).data
+            answered_anime = await get_anime_by_id(anime_id)
+            if not answered_anime:
+                await ctx.respond("Invaid anime id...", ephemeral=True)
+                return
+
+            answered_anime = answered_anime.data
             await ctx.respond(
                 f"Nah, [{answered_anime.title}]({answered_anime.url}) is not quite right. Revealing next clue...",
             )
