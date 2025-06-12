@@ -3,7 +3,6 @@
 
 <img src="./assets/Blurp.png" width=200>
 <br>
-<br>
 
 <h1>Available commands</h1>
 <h3>General</h3>
