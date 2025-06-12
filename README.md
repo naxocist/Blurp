@@ -1,5 +1,5 @@
 # [Blurp](https://discord.com/oauth2/authorize?client_id=1248292283883851919&permissions=2147608640&integration_type=0&scope=bot)
->Introducing versatile anime discord bot | [Invite link](https://discord.com/oauth2/authorize?client_id=1248292283883851919&permissions=2147608640&integration_type=0&scope=bot) | [Status page](https://stats.uptimerobot.com/0Mh40ws4Rq)
+>Introducing versatile anime discord bot | [Invite link](https://discord.com/oauth2/authorize?client_id=1248292283883851919&permissions=2147608640&integration_type=0&scope=bot) | [Status page](https://stats.uptimerobot.com/vI8XFoHe0h)
 
 <img src="./assets/Blurp.png" width=200>
 <br>
