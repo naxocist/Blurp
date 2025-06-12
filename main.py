@@ -2,10 +2,8 @@ import discord
 
 from credentials import DISCORD_TOKEN
 from logging_config import setup_logging
-from keep_alive import keep_alive
 
 setup_logging()
-keep_alive()
 
 intents = discord.Intents.all()
 
