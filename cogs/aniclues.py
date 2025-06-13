@@ -71,7 +71,7 @@ class AniClues(commands.Cog):
         random_idx = randint(0, len(animes) - 1)
         anime_id = animes[random_idx]["node"]["id"]
 
-        print("random id:", anime_id)
+        # print("random id:", anime_id)
         anime = await get_anime_by_id(anime_id)
         anime = anime.data
 
