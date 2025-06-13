@@ -19,14 +19,13 @@ powershell run dev command
 cls; $env:IS_DEV="True"; uv run .\main.py
 
 """
-IS_DEV = os.getenv("IS_DEV")
-
 guild_ids = None
+IS_DEV = os.getenv("IS_DEV")
 if IS_DEV:
+    # Development Variable
     guild_ids = [NAXOCIST_GUILD_ID]
     BLURP_DISCORD_TOKEN = EXAMPLE_DISCORD_TOKEN
 
-if IS_DEV:
     if guild_ids is not None:
         print(
             "Running in development mode with guilds:",
