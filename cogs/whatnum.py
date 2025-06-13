@@ -2,12 +2,22 @@ import discord
 from discord import Bot, ApplicationContext, Embed, Color, Option
 from discord.ext import commands
 
+import asyncio
+from math import floor
+
 from utils.customs.game_state import minigame_objects, players_games
 from utils.customs.whatnum_comps import BinarySearch
 from credentials import guild_ids
 
 
 class WhatNum(commands.Cog):
+
+    fail_embed = lambda target: Embed(
+        title="Failed",
+        description=f"The number was **{target}**\nYou're not being optimal... You should've guessed it.\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
+        color=Color.red(),
+    )
+
     def __init__(self, bot: Bot):
         self.bot = bot
 
@@ -50,6 +60,23 @@ class WhatNum(commands.Cog):
             )
         )
 
+        # print("Target number:", bs_obj.target)
+        timer: int = floor(bs_obj.expected_guess_cnt ** (2.75))
+        await ctx.send(f"You have {timer} seconds. Good luck!")
+
+        while timer > 0:
+            if bs_obj.success:
+                break
+
+            await asyncio.sleep(1)
+            timer -= 1
+
+        if timer == 0 or bs_obj.success == 1:
+            await ctx.respond(embed=WhatNum.fail_embed(bs_obj.target))
+
+        minigame_objects.remove(bs_obj)
+        players_games.pop(member, None)
+
     @binary_search.command(description="Guess that random number!")
     async def guess(self, ctx: ApplicationContext, guess: int):
         member = ctx.author
@@ -74,8 +101,7 @@ class WhatNum(commands.Cog):
             await ctx.respond(
                 embed=Embed(title="Congrats!", description=msg, color=Color.green())
             )
-            minigame_objects.remove(bs_obj)
-            players_games.pop(member, None)
+            bs_obj.terminate(True)
             return
 
         if guess > target:
@@ -84,13 +110,7 @@ class WhatNum(commands.Cog):
             msg = f"{guess} is too small... {guess_left} {"tries" if guess_left > 1 else "try"} left"
 
         if guess_left == 0:
-            await ctx.respond(
-                embed=Embed(
-                    title="Failed",
-                    description=f"The number was **{target}**\nYou're not being optimal... You should've guessed it by now\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
-                    color=Color.red(),
-                )
-            )
+            bs_obj.terminate(False)
             return
 
         await ctx.respond(msg)
@@ -109,16 +129,8 @@ class WhatNum(commands.Cog):
                 "You are not in a guess number minigame...", ephemeral=True
             )
 
-        target = bs_obj.target
-        await ctx.respond(
-            embed=Embed(
-                title="Gave up 🥲",
-                description=f"The number was **{target}**\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
-                color=Color.red(),
-            )
-        )
-        minigame_objects.remove(bs_obj)
-        players_games.pop(member, None)
+        await ctx.respond("🤓☝️")
+        bs_obj.terminate(False)
 
 
 def setup(bot):

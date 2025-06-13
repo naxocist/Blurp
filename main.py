@@ -1,11 +1,12 @@
 import discord
 
-from credentials import DISCORD_TOKEN
+from credentials import BLURP_DISCORD_TOKEN
 from logging_config import setup_logging
 
 setup_logging()
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.message_content = True
 
 bot = discord.Bot(
     description="The versatile anime related discord bot", intents=intents
@@ -25,4 +26,4 @@ if __name__ == "__main__":
             print(f"Failed to load {cog}.py: {e}")
             break
 
-    bot.run(DISCORD_TOKEN)
+    bot.run(BLURP_DISCORD_TOKEN)

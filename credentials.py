@@ -3,12 +3,14 @@ import os
 
 load_dotenv()
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+BLURP_DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+EXAMPLE_DISCORD_TOKEN = os.getenv("EXAMPLE_DISCORD_TOKEN")
 TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
 NAXOCIST_GUILD_ID = os.getenv("NAXOCIST_GUILD_ID")
 PINONT_HOME_GUILD_ID = os.getenv("PINONT_HOME_GUILD_ID")
 MAL_CLIENT_ID = os.getenv("MAL_CLIENT_ID")
 MAL_CLIENT_SECRET = os.getenv("MAL_CLIENT_SECRET")
+
 
 r"""
 
@@ -19,8 +21,10 @@ cls; $env:IS_DEV="True"; uv run .\main.py
 """
 IS_DEV = os.getenv("IS_DEV")
 
-
-guild_ids = [NAXOCIST_GUILD_ID, PINONT_HOME_GUILD_ID] if IS_DEV else None
+guild_ids = None
+if IS_DEV:
+    guild_ids = [NAXOCIST_GUILD_ID]
+    BLURP_DISCORD_TOKEN = EXAMPLE_DISCORD_TOKEN
 
 if IS_DEV:
     if guild_ids is not None:

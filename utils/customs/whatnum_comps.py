@@ -19,3 +19,8 @@ class BinarySearch:
         self.target = randint(low, high)
         self.expected_guess_cnt = floor(log2(high - low + 1)) + 1
         self.guess_cnt = 0
+
+        self.success = 0
+
+    def terminate(self, success: bool):
+        self.success = 2 if success else 1
