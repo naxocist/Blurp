@@ -14,7 +14,7 @@ from utils.customs.anicycle_comps import InviteView, TurnView, PickView, CycleCl
 from utils.customs.commands import count_down_timer
 from utils.customs.game_state import players_games
 
-from credentials import guild_ids
+from credentials import GUILD_IDS
 
 
 class AniCycle(commands.Cog):
@@ -23,7 +23,7 @@ class AniCycle(commands.Cog):
         self.bot: Bot = bot
 
     cycle = discord.SlashCommandGroup(
-        "cycle", "anime cycle game commands", guild_ids=guild_ids
+        "cycle", "anime cycle game commands", guild_ids=GUILD_IDS
     )
 
     @cycle.command(description="Initialize an anime cycle game")

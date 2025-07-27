@@ -5,7 +5,7 @@ from discord import Member, ApplicationContext, Embed, Color, Bot, Option
 from utils.apis.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
 from utils.apis.jikanv4 import get_random_anime
 
-from credentials import guild_ids
+from credentials import GUILD_IDS
 
 
 class Anime(commands.Cog):
@@ -14,7 +14,7 @@ class Anime(commands.Cog):
         self.bot: Bot = bot
 
     # get a random anime based on jikan-v4 API
-    @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
+    @commands.slash_command(guild_ids=GUILD_IDS, description="Get a random anime")
     async def anime(self, ctx):
         await ctx.defer()
 
@@ -49,7 +49,7 @@ class Anime(commands.Cog):
         await discord.Message.add_reaction(response, "📬")
 
     # expression emotions through gifs
-    @commands.slash_command(guild_ids=guild_ids, description="Express your emotions")
+    @commands.slash_command(guild_ids=GUILD_IDS, description="Express your emotions")
     async def expression(
         self,
         ctx: ApplicationContext,
@@ -66,7 +66,7 @@ class Anime(commands.Cog):
 
     # actions to other members through gifs
     @commands.slash_command(
-        guild_ids=guild_ids, description="Perform an action to another user"
+        guild_ids=GUILD_IDS, description="Perform an action to another user"
     )
     async def action(
         self,
@@ -89,7 +89,7 @@ class Anime(commands.Cog):
 
     # get a random anime illustration
     @commands.slash_command(
-        guild_ids=guild_ids, description="Get a random anime illustration"
+        guild_ids=GUILD_IDS, description="Get a random anime illustration"
     )
     async def art(
         self,

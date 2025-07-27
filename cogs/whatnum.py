@@ -7,7 +7,7 @@ from math import floor
 
 from utils.customs.game_state import minigame_objects, players_games
 from utils.customs.whatnum_comps import BinarySearch
-from credentials import guild_ids
+from credentials import GUILD_IDS
 
 
 class WhatNum(commands.Cog):
@@ -24,7 +24,7 @@ class WhatNum(commands.Cog):
     binary_search = discord.SlashCommandGroup(
         "whatnum",
         "Try to guess a random number",
-        guild_ids=guild_ids,
+        guild_ids=GUILD_IDS,
     )
 
     @binary_search.command(

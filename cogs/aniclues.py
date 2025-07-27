@@ -14,7 +14,7 @@ from utils.customs.game_state import minigame_objects, players_games
 from utils.customs.aniclues_comps import CluesClass
 from utils.customs.commands import get_timer_embed
 
-from credentials import guild_ids
+from credentials import GUILD_IDS
 
 
 class AniClues(commands.Cog):
@@ -25,7 +25,7 @@ class AniClues(commands.Cog):
     clues = discord.SlashCommandGroup(
         "clues",
         "Guessing random anime from a MAL profile minigame based on clues",
-        guild_ids=guild_ids,
+        guild_ids=GUILD_IDS,
     )
 
     @clues.command(description="start guessing random anime from given MAL profile!")

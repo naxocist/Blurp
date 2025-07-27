@@ -1,6 +1,6 @@
 import discord
 
-from credentials import BLURP_DISCORD_TOKEN
+from credentials import DISCORD_BOT_TOKEN
 from logging_config import setup_logging
 
 setup_logging()
@@ -26,4 +26,4 @@ if __name__ == "__main__":
             print(f"Failed to load {cog}.py: {e}")
             break
 
-    bot.run(BLURP_DISCORD_TOKEN)
+    bot.run(DISCORD_BOT_TOKEN)
