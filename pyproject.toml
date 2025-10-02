@@ -6,12 +6,14 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiolimiter>=1.2.1",
+    "datamodel-code-generator>=0.32.0",
     "dotmap>=1.3.30",
     "flask>=3.1.1",
     "jikanpy-v4>=1.0.2",
     "lemminflect>=0.2.3",
     "nekosbest>=1.1.13",
     "openai>=1.82.0",
+    "openapi-python-client>=0.26.1",
     "opencv-python>=4.11.0.86",
     "pillow>=11.2.1",
     "py-cord>=2.6.1",

@@ -1,106 +1,85 @@
 import discord
 from discord.ext import commands
 from discord import Member, ApplicationContext, Embed, Color, Bot, Option
+from nekosbest import Result
 
-from utils.apis.nekosbest import get_img, to_is_phrase, actions_to_others, expressions
+from typing import cast
+
+from utils.apis.nekosbest import get_img, get_phrase, other_actions, self_actions
 from utils.apis.jikanv4 import get_random_anime
+from utils.customs.tools import make_anime_embed
 
-from credentials import GUILD_IDS
+from credentials import guild_ids
 
 
 class Anime(commands.Cog):
-
-    def __init__(self, bot):
+    def __init__(self, bot: Bot):
         self.bot: Bot = bot
 
     # get a random anime based on jikan-v4 API
-    @commands.slash_command(guild_ids=GUILD_IDS, description="Get a random anime")
-    async def anime(self, ctx):
+
+    @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
+    async def anime(self, ctx: ApplicationContext):
         await ctx.defer()
 
-        anime = await get_random_anime()  # recieve DotMap object
-        anime = anime.data
-
-        title = anime.title
-        url = anime.url
-        image = anime.images.jpg.image_url
-        genres = " ".join(
-            [f"`{genre.name}`" for genre in anime.genres] if anime.genres else ["`N/A`"]
-        )
-        season = anime.season
-        year = anime.year
-        episodes = anime.episodes or "N/A"
-        score = f"`{anime.score}`/10" or "`N/A`"
-        ranked = f"#{anime.rank}" or "N/A"
-
-        embed = Embed(title=title, url=url, image=image, color=Color.random())
-
-        embed.add_field(name="Genres", value=genres, inline=False)
-        embed.add_field(
-            name="Season",
-            value=f"`{season.capitalize() + " " + str(year) if season and year else "N/A"}`",
-            inline=True,
-        )
-        embed.add_field(name="Length", value=f"`{episodes}` episodes", inline=True)
-        embed.add_field(name="Score", value=f"{score}", inline=True)
-        embed.add_field(name=f"Ranked: `{ranked}`", value="", inline=False)
-
+        anime = await get_random_anime()
+        embed = make_anime_embed(anime)
         response = await ctx.respond(embed=embed)
         await discord.Message.add_reaction(response, "📬")
 
     # expression emotions through gifs
-    @commands.slash_command(guild_ids=GUILD_IDS, description="Express your emotions")
+    @commands.slash_command(guild_ids=guild_ids, description="Express your emotions")
     async def expression(
         self,
         ctx: ApplicationContext,
-        action: Option = Option(
-            str, "What expression do you want to show?", choices=expressions
+        action: str = Option(
+            str, "What expression do you want to show?", choices=self_actions
         ),
     ):
         await ctx.defer()
 
-        image = await get_img(action)
-        is_phrase_action = to_is_phrase(action)
+        image = cast(Result, await get_img(action))
+        phrase = get_phrase(action, ctx.author.mention)
         embed = Embed(image=image.url, color=Color.random())
-        await ctx.respond(f"{ctx.author.mention} {is_phrase_action}!", embed=embed)
+
+        await ctx.respond(phrase, embed=embed)
 
     # actions to other members through gifs
     @commands.slash_command(
-        guild_ids=GUILD_IDS, description="Perform an action to another user"
+        guild_ids=guild_ids, description="Perform an action to another user"
     )
     async def action(
         self,
         ctx: ApplicationContext,
         member: Member,
-        action: Option = Option(
-            str, "What action do you want to perform?", choices=actions_to_others
+        action: str = Option(
+            str, "What action do you want to perform?", choices=other_actions
         ),
     ):
         await ctx.defer()
-
-        image = await get_img(action)
+        image = cast(Result, await get_img(action))
+        phrase = get_phrase(action, ctx.author.mention, member.mention)
         embed = Embed(image=image.url, color=Color.random())
 
-        if action == "dance":
-            action += " with"
-        await ctx.respond(
-            f"{ctx.author.mention} wants to {action} {member.mention}!", embed=embed
-        )
+        await ctx.respond(phrase, embed=embed)
 
     # get a random anime illustration
     @commands.slash_command(
-        guild_ids=GUILD_IDS, description="Get a random anime illustration"
+        guild_ids=guild_ids, description="Get a random anime illustration"
     )
     async def art(
         self,
         ctx: ApplicationContext,
         choice: str = discord.Option(
-            str, "Choose your type", choices=["husbando", "kitsune", "neko", "waifu"]
+            str,
+            "Choose your type",
+            choices=["husbando", "kitsune", "neko", "waifu"],
         ),
     ):
         await ctx.defer()
 
-        result = await get_img(choice)
+        result = cast(Result, await get_img(choice))
+
         image = result.url
         artist = result.artist_name or "Unknown"
         artist_href = result.artist_href or "N/A"
@@ -108,7 +87,9 @@ class Anime(commands.Cog):
 
         embed = Embed(
             title=f"Here is your {choice}!",
-            description=f"Artist: **[{artist}]({artist_href})**\nVisit **[source]({source_url})!**",
+            description=f"Artist: **[{artist}]({artist_href})**\nVisit **[source]({
+                source_url
+            })!**",
             image=image,
             color=Color.random(),
         )
@@ -116,5 +97,5 @@ class Anime(commands.Cog):
         await ctx.respond(embed=embed)
 
 
-def setup(bot):
+def setup(bot: Bot):
     bot.add_cog(Anime(bot))

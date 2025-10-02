@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from random import randint
 from math import log2, floor
 
+from discord import Embed, Color
+
 
 @dataclass(init=False)
 class BinarySearch:
@@ -24,3 +26,11 @@ class BinarySearch:
 
     def terminate(self, success: bool):
         self.success = 2 if success else 1
+
+
+def fail_embed(target: str) -> Embed:
+    return Embed(
+        title="Failed",
+        description=f"The number was **{target}**\nYou're not being optimal... You should've guessed it.\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
+        color=Color.red(),
+    )

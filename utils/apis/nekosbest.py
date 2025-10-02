@@ -1,83 +1,73 @@
-from typing import Union
 import lemminflect
 from nekosbest import Client, Result
 
 client = Client()
 
-# Gifs in nekos.best API is divided into two categories:
-# 1. Actions to others (e.g., "hug", "kick")
-# 2. Expressions (e.g., "happy", "think")
-
-actions_to_others = [
-    "baka",
-    "bite",
-    "cuddle",
-    "dance",
-    "facepalm",
-    "feed",
-    "handhold",
-    "handshake",
-    "highfive",
-    "hug",
-    "kick",
-    "kiss",
-    "pat",
-    "peck",
-    "poke",
-    "punch",
-    "slap",
-    "tickle",
-    "yeet",
-]
-
-# Expressions are also divided into two categories:
-# 1. Verbs (e.g., "laugh", "nod")
-# 2. Adjectives or non-verbs (e.g., "angry", "happy")
-
-expressions = [
-    "angry",
-    "blush",
-    "bored",
-    "cry",
-    "happy",
-    "laugh",
-    "lurk",
-    "nod",
-    "nom",
-    "nope",
-    "pout",
-    "run",
-    "shoot",
-    "shrug",
-    "sleep",
-    "smile",
-    "smug",
-    "stare",
-    "think",
-    "thumbsup",
-    "wave",
-    "wink",
-    "yawn",
-]
-
-print(
-    f"There are total of {len(actions_to_others) + len(expressions)} nekosbest actions"
-)
-
-adjectives_or_non_verbs = ["angry", "bored", "happy", "smug", "thumbsup", "nope"]
+# 2 types of gifs in nekos.best API - self & other
 
 
-# Convert a word to an "is" phrase
-def to_is_phrase(word: str) -> str:
-    if word in adjectives_or_non_verbs:
-        return f"is {word}"
-    inflected = lemminflect.getInflection(word, tag="VBG")
+other_actions_map = {
+    "baka": "A calls B baka",
+    "bite": "A bites B",
+    "cuddle": "A cuddles B",
+    "feed": "A feeds B",
+    "handhold": "A holds B's hand",
+    "handshake": "A shakes hands with B",
+    "highfive": "A gives B a highfive",
+    "hug": "A hugs B",
+    "kick": "A kicks B",
+    "kiss": "A kisses B",
+    "nom": "A noms B",
+    "pat": "A pats B",
+    "peck": "A pecks B",
+    "poke": "A pokes B",
+    "punch": "A punches B",
+    "shoot": "A shoots B",
+    "slap": "A slaps B",
+    "tickle": "A tickles B",
+    "yeet": "A yeets B",
+}
+other_actions = [key for key in other_actions_map]
 
-    if inflected:
-        return f"is {inflected[0]}"
-    return f"is {word}ing"
+
+self_actions_map = {
+    "angry": "A looks angry",
+    "blush": "A blushes",
+    "bored": "A looks bored",
+    "cry": "A cries",
+    "happy": "A looks happy",
+    "nod": "A nods",
+    "nom": "A noms noms..",
+    "laugh": "A laughs",
+    "lurk": "A lurks",
+    "dance": "A dances",
+    "facepalm": "A facepalms",
+    "nope": "A says *nope*",
+    "pout": "A pouts",
+    "run": "A runs",
+    "shrug": "A shrugs",
+    "sleep": "A sleeps",
+    "smile": "A smiles",
+    "smug": "A looks smug",
+    "stare": "A stares",
+    "think": "A thinks",
+    "thumbsup": "A gives a thumbs up",
+    "wave": "A waves",
+    "wink": "A winks",
+    "yawn": "A yawns",
+}
+self_actions = [key for key in self_actions_map]
 
 
-# Get an image from nekos.best API based on the type and amount specified (default to 1).
-async def get_img(type: str, amount: int = 1) -> Union[Result, list[Result]]:
+print(f"There are total of {len(other_actions) + len(self_actions)} nekosbest actions")
+
+
+def get_phrase(word: str, A: str, B: str = "") -> str:
+    if word in other_actions:
+        return other_actions_map[word].replace("A", A).replace("B", B)
+
+    return self_actions_map[word].replace("A", A)
+
+
+async def get_img(type: str, amount: int = 1) -> Result | list[Result]:
     return await client.get_image(type, amount)

@@ -1,4 +1,5 @@
 import discord
+from discord import Member
 from discord.ext import commands
 
 from discord import (
@@ -10,7 +11,6 @@ from discord import (
 
 
 class Events(commands.Cog):
-
     def __init__(self, bot):
         self.bot: Bot = bot
 
@@ -21,8 +21,10 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: RawReactionActionEvent):
         # Handle reacting 📬 to save a message
-        member = payload.member
+        if not payload.member:
+            return
 
+        member: Member = payload.member
         if member.bot:
             return
 

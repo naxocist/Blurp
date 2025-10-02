@@ -7,7 +7,7 @@ from typing import List
 import asyncio
 
 from utils.apis.typhoon import get_synopsis_clue
-from utils.customs.commands import blur_image_from_url
+from utils.customs.tools import blur_image_from_url
 
 
 class CluesClass:
@@ -56,7 +56,7 @@ class CluesClass:
             .add_field(name="Themes", value=themes, inline=True)
             .add_field(
                 name="Season/Year",
-                value=f"`{season.capitalize() + " " + str(year) if season and year else "N/A"}`",
+                value=f"`{season.capitalize() + ' ' + str(year) if season and year else 'N/A'}`",
                 inline=True,
             ),
             # Clue #2: Eps, Score, Ranked

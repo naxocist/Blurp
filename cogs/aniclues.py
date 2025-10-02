@@ -3,29 +3,26 @@ from discord.ext import commands
 from discord import ApplicationContext, Embed, Color, Bot, Member
 
 import asyncio
-from typing import List
 from random import randint
-from pprint import pprint
 
 from utils.apis.jikanv4 import get_anime_by_id
-from utils.apis.typhoon import get_synopsis_clue
-from utils.apis.MAL import get_user_anime_list
-from utils.customs.game_state import minigame_objects, players_games
-from utils.customs.aniclues_comps import CluesClass
-from utils.customs.commands import get_timer_embed
 
-from credentials import GUILD_IDS
+from utils.apis.MAL import get_user_anime_list
+from utils.customs.states import minigame_objects, players_games
+from utils.customs.aniclues.comps import CluesClass
+from utils.customs.tools import get_timer_embed
+
+from credentials import guild_ids
 
 
 class AniClues(commands.Cog):
-
     def __init__(self, bot):
         self.bot: Bot = bot
 
     clues = discord.SlashCommandGroup(
         "clues",
         "Guessing random anime from a MAL profile minigame based on clues",
-        guild_ids=GUILD_IDS,
+        guild_ids=guild_ids,
     )
 
     @clues.command(description="start guessing random anime from given MAL profile!")
@@ -57,7 +54,7 @@ class AniClues(commands.Cog):
             )
             return
 
-        animes: List = await get_user_anime_list(mal_username)
+        animes = await get_user_anime_list(mal_username)
         if not animes or len(animes) == 0:
             await ctx.followup.send(
                 embed=Embed(
@@ -98,7 +95,6 @@ class AniClues(commands.Cog):
         )
 
         while True:
-
             sleep_task = asyncio.create_task(asyncio.sleep(1))
             answered_task = asyncio.create_task(clue_obj.answered_event.wait())
             done, pending = await asyncio.wait(
@@ -121,13 +117,12 @@ class AniClues(commands.Cog):
                 timer = clue_obj.timer
                 timer_msg = await ctx.send(
                     embed=get_timer_embed(
-                        f"{"Time until solution: " if clue_obj.is_last_clue() else "Time until next clue: "}",
+                        f"{'Time until solution: ' if clue_obj.is_last_clue() else 'Time until next clue: '}",
                         timer,
                     )
                 )
 
             if answered_task in done:
-
                 clue_obj.answered_event.clear()
 
                 # correct answer or out of clues, terminate
@@ -152,7 +147,7 @@ class AniClues(commands.Cog):
             if timer % 5 == 0 or timer <= 5:
                 await timer_msg.edit(
                     embed=get_timer_embed(
-                        f"{"Time until solution: " if clue_obj.is_last_clue() else "Time until next clue: "}",
+                        f"{'Time until solution: ' if clue_obj.is_last_clue() else 'Time until next clue: '}",
                         timer,
                     ),
                 )
@@ -177,7 +172,7 @@ class AniClues(commands.Cog):
         clues_obj: CluesClass = players_games.get(member)
 
         if not clues_obj:
-            await ctx.respond(f"You are not in any minigame!", ephemeral=True)
+            await ctx.respond("You are not in any minigame!", ephemeral=True)
             return
 
         if not isinstance(clues_obj, CluesClass):

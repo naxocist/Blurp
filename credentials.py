@@ -1,39 +1,40 @@
 import os
 from dotenv import load_dotenv
 
-
-# === Load environment variables ===
-IS_DEV = os.getenv("ENV") == "dev"
+# === Determine Environment ===
+IS_DEV = os.getenv("ENV", "production").lower() == "dev"
 env_file = ".env.development" if IS_DEV else ".env.production"
-load_dotenv(dotenv_path=env_file)
 
+if not load_dotenv(dotenv_path=f"./env/{env_file}"):
+    raise FileNotFoundError(f"Environment file '{env_file}' not found in ./env/")
 
-# === Development / Production Mode Handling ===
-""" 
-cls; $env:ENV="dev"; uv run .\main.py 
-"""
+# === Constants / Environment Variables ===
+DISCORD_BOT_TOKEN: str | None = os.getenv("DISCORD_BOT_TOKEN")
 
+NAXOCIST_GUILD_ID: str | None = os.getenv("NAXOCIST_GUILD_ID")
+PINONT_HOME_GUILD_ID: str | None = os.getenv("PINONT_HOME_GUILD_ID")
 
-# === Constants ===
-GUILD_IDS = None
-DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+TYPHOON_API_KEY: str | None = os.getenv("TYPHOON_API_KEY")
+MAL_CLIENT_ID: str | None = os.getenv("MAL_CLIENT_ID")
+MAL_CLIENT_SECRET: str | None = os.getenv("MAL_CLIENT_SECRET")
 
-NAXOCIST_GUILD_ID = os.getenv("NAXOCIST_GUILD_ID")
-PINONT_HOME_GUILD_ID = os.getenv("PINONT_HOME_GUILD_ID")
+# === Guild IDs Handling ===
+guild_ids: list[int] = []
 
-TYPHOON_API_KEY = os.getenv("TYPHOON_API_KEY")
-MAL_CLIENT_ID = os.getenv("MAL_CLIENT_ID")
-MAL_CLIENT_SECRET = os.getenv("MAL_CLIENT_SECRET")
-
-
-print(DISCORD_BOT_TOKEN)
 if IS_DEV:
-    print("🔧 Running in development mode.")
-    GUILD_IDS = [gid for gid in [NAXOCIST_GUILD_ID] if gid]
+    print("🔧 Dev mode!")
+    raw_guilds = [NAXOCIST_GUILD_ID]
 
-    if GUILD_IDS:
-        print("✅ Guilds registered for dev mode:", ", ".join(GUILD_IDS))
+    for gid in raw_guilds:
+        if gid:
+            try:
+                guild_ids.append(int(gid))
+            except ValueError:
+                print(f"⚠️ Invalid guild ID in environment: {gid}")
+
+    if guild_ids:
+        print(f"✅ Guilds registered for dev mode: {', '.join(map(str, guild_ids))}")
     else:
-        print("⚠️ No guild IDs set for dev mode.")
+        print("⚠️ No valid guild IDs set for dev mode.")
 else:
-    print("🚀 Running in production mode.")
+    print("🚀 Production mode!")

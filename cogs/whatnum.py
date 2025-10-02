@@ -5,26 +5,19 @@ from discord.ext import commands
 import asyncio
 from math import floor
 
-from utils.customs.game_state import minigame_objects, players_games
-from utils.customs.whatnum_comps import BinarySearch
-from credentials import GUILD_IDS
+from utils.customs.states import minigame_objects, players_games
+from utils.customs.whatnum.comps import BinarySearch, fail_embed
+from credentials import guild_ids
 
 
 class WhatNum(commands.Cog):
-
-    fail_embed = lambda target: Embed(
-        title="Failed",
-        description=f"The number was **{target}**\nYou're not being optimal... You should've guessed it.\nMaybe look into [binary search](https://en.wikipedia.org/wiki/Binary_search)",
-        color=Color.red(),
-    )
-
     def __init__(self, bot: Bot):
         self.bot = bot
 
     binary_search = discord.SlashCommandGroup(
         "whatnum",
         "Try to guess a random number",
-        guild_ids=GUILD_IDS,
+        guild_ids=guild_ids,
     )
 
     @binary_search.command(
@@ -72,7 +65,7 @@ class WhatNum(commands.Cog):
             timer -= 1
 
         if timer == 0 or bs_obj.success == 1:
-            await ctx.respond(embed=WhatNum.fail_embed(bs_obj.target))
+            await ctx.respond(embed=fail_embed(bs_obj.target))
 
         minigame_objects.remove(bs_obj)
         players_games.pop(member, None)
@@ -83,7 +76,7 @@ class WhatNum(commands.Cog):
         bs_obj: BinarySearch = players_games.get(member)
 
         if not bs_obj:
-            await ctx.respond(f"You are not in any minigame!", ephemeral=True)
+            await ctx.respond("You are not in any minigame!", ephemeral=True)
             return
 
         if not isinstance(bs_obj, BinarySearch):
@@ -105,9 +98,9 @@ class WhatNum(commands.Cog):
             return
 
         if guess > target:
-            msg = f"{guess} is too large... {guess_left} {"tries" if guess_left > 1 else "try"} left"
+            msg = f"{guess} is too large... {guess_left} {'tries' if guess_left > 1 else 'try'} left"
         elif guess < target:
-            msg = f"{guess} is too small... {guess_left} {"tries" if guess_left > 1 else "try"} left"
+            msg = f"{guess} is too small... {guess_left} {'tries' if guess_left > 1 else 'try'} left"
 
         if guess_left == 0:
             bs_obj.terminate(False)
@@ -121,7 +114,7 @@ class WhatNum(commands.Cog):
         bs_obj: BinarySearch = players_games.get(member)
 
         if not bs_obj:
-            await ctx.respond(f"You can't give up on nothing...", ephemeral=True)
+            await ctx.respond("You can't give up on nothing...", ephemeral=True)
             return
 
         if not isinstance(bs_obj, BinarySearch):
