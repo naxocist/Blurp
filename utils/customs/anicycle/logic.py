@@ -5,7 +5,7 @@ from discord import Member, ApplicationContext, Embed, Color
 from typing import cast
 import asyncio
 from utils.apis.nekosbest import get_img
-from utils.customs.components.anicycle import InviteView, TurnView, PickView, CycleClass
+from utils.customs.anicycle.comps import InviteView, TurnView, PickView, CycleClass
 from utils.customs.tools import count_down_timer  # discord embed countdown timer
 
 
