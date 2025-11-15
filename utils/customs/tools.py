@@ -1,12 +1,12 @@
+import asyncio
+from io import BytesIO
+from typing import Any, Callable
+
 import cv2
 import numpy as np
 import requests
+from discord import ApplicationContext, Color, Embed
 from PIL import Image
-from io import BytesIO
-from discord import ApplicationContext, Embed, Color
-
-from typing import Any, Callable
-import asyncio
 
 
 def make_anime_embed(anime: dict[str, Any]) -> Embed:

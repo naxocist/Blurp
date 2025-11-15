@@ -1,19 +1,20 @@
-import discord
-from discord.ext import commands
-from discord import Member, ApplicationContext, Embed, Color, Bot, Option
-from nekosbest import Result
-
 from typing import cast
 
-from utils.apis.nekosbest import get_img, get_phrase, other_actions, self_actions
-from utils.apis.jikanv4 import get_random_anime
-from utils.customs.tools import make_anime_embed
+import discord
+from discord import (ApplicationContext, Bot, Color, Embed, Member, Message,
+                     Option)
+from discord.ext import commands
+from nekosbest import Result
 
 from credentials import guild_ids
+from utils.apis.jikanv4 import get_random_anime
+from utils.apis.nekosbest import (get_img, get_phrase, other_actions,
+                                  self_actions)
+from utils.customs.tools import make_anime_embed
 
 
 class Anime(commands.Cog):
-    def __init__(self, bot: Bot):
+    def __init__(self, bot):
         self.bot: Bot = bot
 
     # get a random anime based on jikan-v4 API
@@ -25,6 +26,7 @@ class Anime(commands.Cog):
         anime = await get_random_anime()
         embed = make_anime_embed(anime)
         response = await ctx.respond(embed=embed)
+        response = cast(Message, response)
         await discord.Message.add_reaction(response, "📬")
 
     # expression emotions through gifs
@@ -32,12 +34,13 @@ class Anime(commands.Cog):
     async def expression(
         self,
         ctx: ApplicationContext,
-        action: str = Option(
+        action=Option(
             str, "What expression do you want to show?", choices=self_actions
         ),
     ):
         await ctx.defer()
 
+        action = cast(str, action)
         image = cast(Result, await get_img(action))
         phrase = get_phrase(action, ctx.author.mention)
         embed = Embed(image=image.url, color=Color.random())
@@ -52,11 +55,12 @@ class Anime(commands.Cog):
         self,
         ctx: ApplicationContext,
         member: Member,
-        action: str = Option(
+        action=Option(
             str, "What action do you want to perform?", choices=other_actions
         ),
     ):
         await ctx.defer()
+        action = cast(str, action)
         image = cast(Result, await get_img(action))
         phrase = get_phrase(action, ctx.author.mention, member.mention)
         embed = Embed(image=image.url, color=Color.random())
@@ -70,7 +74,7 @@ class Anime(commands.Cog):
     async def art(
         self,
         ctx: ApplicationContext,
-        choice: str = discord.Option(
+        choice=discord.Option(
             str,
             "Choose your type",
             choices=["husbando", "kitsune", "neko", "waifu"],
@@ -78,6 +82,7 @@ class Anime(commands.Cog):
     ):
         await ctx.defer()
 
+        choice = cast(str, choice)
         result = cast(Result, await get_img(choice))
 
         image = result.url

@@ -1,8 +1,7 @@
 from openai import OpenAI
+
 from credentials import TYPHOON_API_KEY
-
 from utils.apis.jikanv4 import get_anime_characters
-
 
 client = OpenAI(api_key=TYPHOON_API_KEY, base_url="https://api.opentyphoon.ai/v1")
 

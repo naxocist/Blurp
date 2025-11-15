@@ -1,12 +1,14 @@
+import asyncio
+from typing import cast
+
+from discord import ApplicationContext, Color, Embed, Member
 from nekosbest import Result
 
-from discord import Member, ApplicationContext, Embed, Color
-
-from typing import cast
-import asyncio
 from utils.apis.nekosbest import get_img
-from utils.customs.anicycle.comps import InviteView, TurnView, PickView, CycleClass
-from utils.customs.tools import count_down_timer  # discord embed countdown timer
+from utils.customs.anicycle.comps import (CycleClass, InviteView, PickView,
+                                          TurnView)
+from utils.customs.tools import \
+    count_down_timer  # discord embed countdown timer
 
 
 async def init_phase(ctx: ApplicationContext):
@@ -24,6 +26,10 @@ async def init_phase(ctx: ApplicationContext):
     await invite_view.wait()
     invite_view.disable_all_items()
     await intro_msg.edit(view=invite_view)
+
+    if invite_view.terminator is None:
+        await ctx.respond("[Error] No terminator... weird.")
+        return
 
     if invite_view.is_terminated:
         await ctx.send(
@@ -216,7 +222,7 @@ async def game_phase(ctx: ApplicationContext, cycle_obj):
             answered_task = asyncio.create_task(cycle_obj.answered_event.wait())
             view_task = asyncio.create_task(turn_view.wait())
 
-            done, pending = await asyncio.wait(
+            done, _ = await asyncio.wait(
                 [sleep_task, answered_task, view_task],
                 return_when=asyncio.FIRST_COMPLETED,
             )
@@ -236,6 +242,9 @@ async def game_phase(ctx: ApplicationContext, cycle_obj):
             elif not is_last_player:
                 timeout -= 1
 
+        if turn_view.terminator is None:
+            await ctx.respond("[ERROR] No terminator... weird.")
+            return
         # Early terminate by a member
         if turn_view.is_terminated:
             await turn_msg.delete()

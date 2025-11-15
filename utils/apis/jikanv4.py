@@ -1,9 +1,9 @@
-from typing import Any
-from jikanpy import Jikan
-
 import asyncio
-from aiolimiter import AsyncLimiter
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any
+
+from aiolimiter import AsyncLimiter
+from jikanpy import Jikan
 
 limiter = AsyncLimiter(max_rate=3, time_period=1)  # limit to 3 requests per 1 second
 executor = ThreadPoolExecutor(max_workers=5)  # limit number of threads

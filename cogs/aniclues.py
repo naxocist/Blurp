@@ -1,18 +1,17 @@
-import discord
-from discord.ext import commands
-from discord import ApplicationContext, Embed, Color, Bot, Member
-
 import asyncio
 from random import randint
 
-from utils.apis.jikanv4 import get_anime_by_id
-
-from utils.apis.MAL import get_user_anime_list
-from utils.customs.states import minigame_objects, players_games
-from utils.customs.aniclues.comps import CluesClass
-from utils.customs.tools import get_timer_embed
+import discord
+from discord import ApplicationContext, Bot, Color, Embed, Member
+from discord.ext import commands
+from dotmap import DotMap
 
 from credentials import guild_ids
+from utils.apis.jikanv4 import get_anime_by_id
+from utils.apis.MAL import get_user_anime_list
+from utils.customs.aniclues.comps import CluesClass
+from utils.customs.states import minigame_objects, players_games
+from utils.customs.tools import get_timer_embed
 
 
 class AniClues(commands.Cog):
@@ -46,6 +45,8 @@ class AniClues(commands.Cog):
             title
         """
         await ctx.defer()
+        if not isinstance(ctx.author, Member):
+            return
 
         if ctx.author in players_games:
             await ctx.respond(
@@ -70,6 +71,7 @@ class AniClues(commands.Cog):
 
         # print("random id:", anime_id)
         anime = await get_anime_by_id(anime_id)
+        anime = DotMap(anime)
         anime = anime.data
 
         clue_obj = CluesClass(anime)
@@ -97,7 +99,7 @@ class AniClues(commands.Cog):
         while True:
             sleep_task = asyncio.create_task(asyncio.sleep(1))
             answered_task = asyncio.create_task(clue_obj.answered_event.wait())
-            done, pending = await asyncio.wait(
+            done, _ = await asyncio.wait(
                 [sleep_task, answered_task],
                 return_when=asyncio.FIRST_COMPLETED,
             )
@@ -108,10 +110,8 @@ class AniClues(commands.Cog):
                 clue_obj.just_answered = 0
 
                 crr_clue_embed = clue_obj.get_current_embed()
-                await ctx.send(
-                    file=clue_obj.file if clue_obj.crr_clue_idx == 4 else None,
-                    embed=crr_clue_embed,
-                )
+                if clue_obj.crr_clue_idx == 4:
+                    await ctx.send(file=clue_obj.file, embed=crr_clue_embed)
 
                 await timer_msg.delete()
                 timer = clue_obj.timer
@@ -168,8 +168,11 @@ class AniClues(commands.Cog):
 
     @clues.command(description="submit your guess!")
     async def answer(self, ctx: ApplicationContext, anime_id: int):
+        if not isinstance(ctx.author, Member):
+            return
+
         member: Member = ctx.author
-        clues_obj: CluesClass = players_games.get(member)
+        clues_obj = players_games.get(member)
 
         if not clues_obj:
             await ctx.respond("You are not in any minigame!", ephemeral=True)

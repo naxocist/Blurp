@@ -1,21 +1,16 @@
-from discord.ext import commands
-from discord import Member, ApplicationContext, Embed, Color, Bot
-from dotmap import DotMap
+from typing import cast
+
 import discord
-
-
-from utils.apis.jikanv4 import get_anime_by_id
-
-from utils.customs.states import players_games  # shared in-memory game state
-from utils.customs.anicycle.comps import CycleClass
-from utils.customs.anicycle.logic import (
-    init_phase,
-    random_phase,
-    pick_phase,
-    game_phase,
-)
+from discord import ApplicationContext, Bot, Color, Embed, Interaction, Member
+from discord.ext import commands
+from dotmap import DotMap
 
 from credentials import guild_ids
+from utils.apis.jikanv4 import get_anime_by_id
+from utils.customs.anicycle.comps import CycleClass
+from utils.customs.anicycle.logic import (game_phase, init_phase, pick_phase,
+                                          random_phase)
+from utils.customs.states import players_games  # shared in-memory game state
 
 
 class AniCycle(commands.Cog):
@@ -56,8 +51,13 @@ class AniCycle(commands.Cog):
         This command should be used in "picking" phase
         Pick an anime for assigned player using MAL anime id.
         """
+        if not isinstance(ctx.author, Member):
+            return
+
         member: Member = ctx.author
-        cycle_obj: CycleClass = players_games.get(member)
+        cycle_obj = players_games.get(member)
+        if cycle_obj is None:
+            return
 
         if not cycle_obj:
             await ctx.respond("You are not in any anime cycle game.", ephemeral=True)
@@ -72,6 +72,7 @@ class AniCycle(commands.Cog):
             await ctx.respond("Invalid anime id was provided.", ephemeral=True)
             return
 
+        result = DotMap(result)
         title, url, mal_id, image_url = (
             result.data.title,
             result.data.url,
@@ -79,9 +80,8 @@ class AniCycle(commands.Cog):
             result.data.images.jpg.image_url,
         )
 
-        target: Member = cycle_obj.targets[
-            member
-        ]  # get member object of assigned player
+        # get member object of assigned player
+        target: Member = cycle_obj.targets[member]
 
         # assigned that player a dotmapped compact anime info
         cycle_obj.player_animes[target] = DotMap(
@@ -104,8 +104,11 @@ class AniCycle(commands.Cog):
         This command should be used in "turns" phase
         Member will use this command to submit their answer
         """
-        member: Member = ctx.author
-        cycle_obj: CycleClass = players_games.get(member)
+        member = ctx.author
+        if not isinstance(member, Member):
+            return
+
+        cycle_obj = players_games.get(member)
 
         if not cycle_obj:
             await ctx.respond("You are not in any anime cycle game.", ephemeral=True)
@@ -128,6 +131,7 @@ class AniCycle(commands.Cog):
             await ctx.respond("Invalid anime id was provided.", ephemeral=True)
             return
 
+        result = DotMap(result)
         title, url, mal_id, image_url = (
             result.data.title,
             result.data.url,
@@ -135,9 +139,8 @@ class AniCycle(commands.Cog):
             result.data.images.jpg.image_url,
         )
 
-        target: DotMap = cycle_obj.player_animes[
-            member
-        ]  # retrieve player's assigned anime
+        # retrieve player's assigned anime
+        target: DotMap = cycle_obj.player_animes[member]
 
         correct = target.mal_id == mal_id
         guessed = f"{member.mention} guessed [{title}]({url})\n"
@@ -158,6 +161,7 @@ class AniCycle(commands.Cog):
         answer_msg = await ctx.respond(embed=embed)
         cycle_obj.answered_event.set()  # trigger answered flag
 
+        answer_msg = cast(Interaction, answer_msg)
         msg = await answer_msg.original_response()
         await msg.delete(delay=5)
 

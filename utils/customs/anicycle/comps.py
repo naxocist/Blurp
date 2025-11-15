@@ -1,11 +1,11 @@
-import discord
-from discord import Interaction, Member, Embed, Color
-from discord.ui import View, Button
-
-from typing import List
-from dotmap import DotMap
 import asyncio
 import random
+from typing import List
+
+import discord
+from discord import Color, Embed, Interaction, Member
+from discord.ui import Button, View
+from dotmap import DotMap
 
 from ..states import minigame_objects, players_games
 
@@ -18,7 +18,10 @@ class InviteView(View):
         self.terminator = None
 
     @discord.ui.button(label="join", style=discord.ButtonStyle.green, emoji="🤓")
-    async def join(self, button: Button, interaction: Interaction):
+    async def join(self, _, interaction: Interaction):
+        if not isinstance(interaction.user, Member):
+            return
+
         member: Member = interaction.user
         if member in self.cycle_object.players:
             await interaction.response.send_message(
@@ -32,12 +35,12 @@ class InviteView(View):
     @discord.ui.button(
         label="force start", style=discord.ButtonStyle.blurple, emoji="💀"
     )
-    async def start(self, button: Button, interaction: Interaction):
+    async def start(self, _, interaction: Interaction):
         await interaction.response.defer()
         self.stop()
 
     @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
-    async def terminate(self, button: Button, interaction: Interaction):
+    async def terminate(self, _, interaction: Interaction):
         await interaction.response.defer()
         self.is_terminated = True
         self.terminator = interaction.user
@@ -64,7 +67,7 @@ class TurnView(View):
         self.stop()
 
     @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
-    async def terminate(self, button: Button, interaction: Interaction):
+    async def terminate(self, _, interaction: Interaction):
         await interaction.response.defer()
         self.is_terminated = True
         self.terminator = interaction.user
@@ -78,7 +81,7 @@ class PickView(View):
         self.terminator = None
 
     @discord.ui.button(label="terminate", style=discord.ButtonStyle.red)
-    async def terminate(self, button: Button, interaction: Interaction):
+    async def terminate(self, _, interaction: Interaction):
         await interaction.response.defer()
         self.is_terminated = True
         self.terminator = interaction.user

@@ -1,13 +1,14 @@
-import discord
-from discord import Bot, ApplicationContext, Embed, Color, Option
-from discord.ext import commands
-
 import asyncio
 from math import floor
+from typing import cast
 
+import discord
+from discord import ApplicationContext, Bot, Color, Embed, Member, Option
+from discord.ext import commands
+
+from credentials import guild_ids
 from utils.customs.states import minigame_objects, players_games
 from utils.customs.whatnum.comps import BinarySearch, fail_embed
-from credentials import guild_ids
 
 
 class WhatNum(commands.Cog):
@@ -30,6 +31,10 @@ class WhatNum(commands.Cog):
         high=Option(int, "The upper bound (default = 100)", default=100),
     ):
         member = ctx.author
+        if not isinstance(member, Member):
+            return
+        low = cast(str, low)
+        high = cast(str, high)
 
         if member in players_games:
             await ctx.respond(
@@ -65,7 +70,7 @@ class WhatNum(commands.Cog):
             timer -= 1
 
         if timer == 0 or bs_obj.success == 1:
-            await ctx.respond(embed=fail_embed(bs_obj.target))
+            await ctx.respond(embed=fail_embed(str(bs_obj.target)))
 
         minigame_objects.remove(bs_obj)
         players_games.pop(member, None)
@@ -73,7 +78,9 @@ class WhatNum(commands.Cog):
     @binary_search.command(description="Guess that random number!")
     async def guess(self, ctx: ApplicationContext, guess: int):
         member = ctx.author
-        bs_obj: BinarySearch = players_games.get(member)
+        if not isinstance(member, Member):
+            return
+        bs_obj = players_games.get(member)
 
         if not bs_obj:
             await ctx.respond("You are not in any minigame!", ephemeral=True)
@@ -111,7 +118,9 @@ class WhatNum(commands.Cog):
     @binary_search.command(description="For real!? plz don't")
     async def giveup(self, ctx: ApplicationContext):
         member = ctx.author
-        bs_obj: BinarySearch = players_games.get(member)
+        if not isinstance(member, Member):
+            return
+        bs_obj = players_games.get(member)
 
         if not bs_obj:
             await ctx.respond("You can't give up on nothing...", ephemeral=True)
