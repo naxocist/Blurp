@@ -60,7 +60,9 @@ class AniClues(commands.Cog):
             await ctx.followup.send(
                 embed=Embed(
                     title="Error",
-                    description=f"Could not retrieve anime list for user `{mal_username}` or the list is empty. Please check the username.",
+                    description=f"Could not retrieve anime list for user  \
+                            `{mal_username}` or the list is empty. \
+                            Please check the username.",
                     color=Color.red(),
                 )
             )
@@ -80,7 +82,9 @@ class AniClues(commands.Cog):
         await ctx.respond(
             embed=Embed(
                 title="Anime Clues initialized!",
-                description=f"You will be guessing a random anime from [{mal_username}](https://myanimelist.net/profile/{mal_username}) profile!\n As clues are gradually revealed...",
+                description=f"You will be guessing a random anime from \
+                        [{mal_username}](https://myanimelist.net/profile/{mal_username}) \
+                        profile!\n As clues are gradually revealed...",
                 color=Color.blurple(),
             )
         )
@@ -200,9 +204,11 @@ class AniClues(commands.Cog):
                 await ctx.respond("Invaid anime id...", ephemeral=True)
                 return
 
+            answered_anime = DotMap(answered_anime)
             answered_anime = answered_anime.data
             await ctx.respond(
-                f"Nah, [{answered_anime.title}]({answered_anime.url}) is not quite right. Revealing next clue...",
+                f"Nah, [{answered_anime.title}]({answered_anime.url}) is not quite right. \
+                        Revealing next clue...",
             )
             clues_obj.just_answered = 1  # incorrect answer
 

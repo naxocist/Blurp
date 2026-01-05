@@ -1,13 +1,7 @@
 import discord
-from discord import Member
+from discord import (ApplicationCommandError, ApplicationContext, Bot, Member,
+                     RawReactionActionEvent)
 from discord.ext import commands
-
-from discord import (
-    ApplicationContext,
-    ApplicationCommandError,
-    RawReactionActionEvent,
-    Bot,
-)
 
 
 class Events(commands.Cog):

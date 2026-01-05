@@ -27,6 +27,18 @@ async def init_phase(ctx: ApplicationContext):
     invite_view.disable_all_items()
     await intro_msg.edit(view=invite_view)
 
+    # too few players
+    if cycle_obj.player_count < 2:
+        await ctx.send(
+            embed=Embed(
+                title="Anime Cycle terminated",
+                description="You need at least 2 players!",
+                color=Color.red(),
+            ),
+        )
+        cycle_obj.clean_up()
+        return None
+
     if invite_view.terminator is None:
         await ctx.respond("[Error] No terminator... weird.")
         return
@@ -38,18 +50,6 @@ async def init_phase(ctx: ApplicationContext):
                 color=Color.red(),
             )
         )
-        return None
-
-    # too few players to start the game
-    if cycle_obj.player_count < 2:
-        await ctx.send(
-            embed=Embed(
-                title="Anime Cycle terminated",
-                description="You need at least 2 players!",
-                color=Color.red(),
-            ),
-        )
-        cycle_obj.clean_up()
         return None
 
     return cycle_obj

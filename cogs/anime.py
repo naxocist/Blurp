@@ -18,7 +18,6 @@ class Anime(commands.Cog):
         self.bot: Bot = bot
 
     # get a random anime based on jikan-v4 API
-
     @commands.slash_command(guild_ids=guild_ids, description="Get a random anime")
     async def anime(self, ctx: ApplicationContext):
         await ctx.defer()
