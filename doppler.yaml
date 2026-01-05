@@ -1,0 +1,4 @@
+setup:
+  - project: blurp
+    config: prd_naxocist
+
