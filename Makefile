@@ -16,6 +16,8 @@ run-dev:
 run-prod:
 	uv run main.py
 
+fresh-start: clean install run-prod
+
 clean:
 	rm -rf .venv
 	find . -type d -name "__pycache__" -exec rm -rf {} +
