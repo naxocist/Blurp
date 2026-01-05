@@ -14,7 +14,7 @@ run-dev:
 	ENV=dev uv run main.py
 
 run-prod:
-	uv run main.py
+	ENV=production uv run main.py
 
 fresh-start: clean install run-prod
 

@@ -3,11 +3,21 @@ from typing import Optional
 from dotenv import load_dotenv
 
 # === Determine Environment ===
-IS_DEV = os.getenv("ENV", "production").lower() == "dev"
+ENV = os.getenv("ENV", "production").lower()
+IS_DEV = ENV == "dev"
+
 env_file = ".env.development" if IS_DEV else ".env.production"
 
-if not load_dotenv(dotenv_path=f"./{env_file}"):
-    raise FileNotFoundError(f"'{env_file}' not found")
+if os.path.exists(env_file):
+    load_dotenv(dotenv_path=env_file)
+    print(f"Loaded variables from {env_file}")
+else:
+    print(f"No {env_file} found. Using system environment variables.")
+
+REQUIRED_KEYS = ["DISCORD_BOT_TOKEN", "TYPHOON_API_KEY", "MAL_CLIENT_SECRET", "MAL_CLIENT_ID"]
+for key in REQUIRED_KEYS:
+    if not os.getenv(key):
+        raise RuntimeError(f"Missing critical variable: {key}")
 
 # === Constants / Environment Variables ===
 DISCORD_BOT_TOKEN: str | None = os.getenv("DISCORD_BOT_TOKEN")
