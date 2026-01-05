@@ -1,8 +1,10 @@
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+  make \
+  libgl1 \
+  libglib2.0-0 \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=docker.io/astral/uv:latest /uv /uvx /bin/
 
