@@ -1,12 +1,13 @@
 import os
+from typing import Optional
 from dotenv import load_dotenv
 
 # === Determine Environment ===
 IS_DEV = os.getenv("ENV", "production").lower() == "dev"
 env_file = ".env.development" if IS_DEV else ".env.production"
 
-if not load_dotenv(dotenv_path=f"./env/{env_file}"):
-    raise FileNotFoundError(f"Environment file '{env_file}' not found in ./env/")
+if not load_dotenv(dotenv_path=f"./{env_file}"):
+    raise FileNotFoundError(f"'{env_file}' not found")
 
 # === Constants / Environment Variables ===
 DISCORD_BOT_TOKEN: str | None = os.getenv("DISCORD_BOT_TOKEN")
@@ -19,7 +20,7 @@ MAL_CLIENT_ID: str | None = os.getenv("MAL_CLIENT_ID")
 MAL_CLIENT_SECRET: str | None = os.getenv("MAL_CLIENT_SECRET")
 
 # === Guild IDs Handling ===
-guild_ids: list[int] = []
+guild_ids: Optional[list[int]] = []
 
 if IS_DEV:
     print("🔧 Dev mode!")
@@ -37,4 +38,5 @@ if IS_DEV:
     else:
         print("⚠️ No valid guild IDs set for dev mode.")
 else:
+    guild_ids = None
     print("🚀 Production mode!")
