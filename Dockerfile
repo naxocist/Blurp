@@ -16,8 +16,6 @@ RUN uv sync --frozen --no-install-project
 
 COPY . .
 
-RUN uv sync --frozen
-
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD ps aux | grep "[p]ython" || exit 1
 
